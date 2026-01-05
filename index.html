@@ -1274,7 +1274,7 @@
         // 저장할 핵심 데이터 객체 구성
         const saveData = {
             player: state.player,
-            inventory: state.inventory,
+            // inventory: state.inventory는 삭제 (state.player.inventory에 이미 있으므로)
             currentStage: state.currentStage,
             saveDate: new Date().toLocaleString()
         };
@@ -1310,17 +1310,26 @@
                 
                 // 전역 상태(state)에 데이터 덮어쓰기
                 state.player = data.player;
-                state.inventory = data.inventory;
+                // state.inventory 로직 삭제 (player 안에 포함됨)
                 state.currentStage = data.currentStage || 'town';
                 
                 // 데이터 적용 후 UI 및 화면 갱신
                 updateUI();
                 renderInventory();
                 
-                // 만약 마을이라면 NPC나 포탈 등을 다시 렌더링
+                // [수정] 맵 로딩 로직 개선
+                clearEntities(); // 기존 엔티티 삭제
+                const stage = STAGES[state.currentStage]; // 현재 스테이지 정보 가져오기
+
                 if (state.currentStage === 'town') {
-                    clearEntities();
                     setupTown();
+                } else {
+                    // 마을이 아닐 경우(필드, 던전 등)에도 배경 설정 및 몬스터 소환
+                    applyStageVisuals(stage);
+                    document.getElementById('current-map-name').innerText = stage.name;
+                    
+                    // 세이브 파일엔 몬스터 정보가 없으므로 새로 생성
+                    for(let i=0; i<4; i++) spawnMonster();
                 }
                 
                 showDamage("시스템: 데이터 로드 성공!", 400, 300, "#74b9ff");
