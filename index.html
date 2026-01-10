@@ -2,9 +2,10 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Chronicles Online - Reforged</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chronicles Online - Reforged (Mobile Support)</title>
     <style>
-        body { margin: 0; background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        body { margin: 0; background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
         
         #game-screen { 
             position: relative; width: 950px; height: 700px; 
@@ -39,14 +40,37 @@
         .grade-rare { color: #3498db; }
         .grade-epic { color: #9b59b6; }
         .grade-legend { color: #f1c40f; text-shadow: 0 0 5px #f39c12; font-weight: bold; }
+        
+        /* [추가] 신화 등급 스타일 (붉게 빛남) */
+        .grade-mythic { 
+            color: #ff3838; 
+            font-weight: 900; 
+            text-shadow: 0 0 5px #ff0000, 0 0 10px #c0392b; 
+            animation: mythic-glow 1.5s infinite alternate; 
+        }
+        @keyframes mythic-glow { 
+            0% { text-shadow: 0 0 5px #ff0000; } 
+            100% { text-shadow: 0 0 15px #ff0000, 0 0 20px #fff; } 
+        }
 
         .entity { position: absolute; display: flex; justify-content: center; align-items: center; border-radius: 5px; z-index: 10; transition: transform 0.1s; }
         #player { width: 44px; height: 44px; background: #3498db; border: 2px solid #fff; z-index: 20; }
         .monster { width: 40px; height: 40px; border: 2px solid rgba(0,0,0,0.3); }
+        
+        /* 몬스터 스타일 */
         .mob-slime { background: #55efc4; }
         .mob-orc { background: #e17055; width: 48px; height: 48px; }
         .mob-ghost { background: #a29bfe; opacity: 0.8; }
         .mob-demon { background: #c0392b; width: 55px; height: 55px; border: 2px solid #f1c40f; }
+
+        .mob-ice_slime { background: #81ecec; border: 2px solid #74b9ff; }
+        .mob-yeti { background: #dfe6e9; width: 48px; height: 48px; border: 2px solid #b2bec3; }
+        
+        .mob-mud_golem { background: #8d6e63; width: 50px; height: 50px; border: 2px solid #5d4037; }
+        .mob-hydra { background: #6c5ce7; width: 50px; height: 50px; border: 2px solid #a29bfe; }
+        
+        .mob-dark_knight { background: #2d3436; width: 46px; height: 46px; border: 2px solid #a29bfe; box-shadow: 0 0 5px #a29bfe; }
+        .mob-dragon { background: #2d3436; width: 70px; height: 70px; border: 3px solid #d63031; box-shadow: 0 0 15px rgba(214, 48, 49, 0.6); }
 
         /* NPC 스타일 */
         .npc { width: 44px; height: 44px; border: 2px solid #f1c40f; background: #9b59b6; cursor: pointer; z-index: 15; }
@@ -57,13 +81,6 @@
         .plaza-circle { position: absolute; width: 300px; height: 300px; border-radius: 50%; border: 5px dashed rgba(255,255,255,0.1); top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1; }
         .house { position: absolute; background: #8e44ad; border: 2px solid #9b59b6; z-index: 5; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px #000; }
         .dummy { width: 40px; height: 60px; background: #d35400; border: 2px solid #a04000; border-radius: 5px; }
-
-        .atk-slash { animation: slash-anim 0.3s ease-out; }
-        @keyframes slash-anim { 0% { transform: rotate(0deg); } 50% { transform: rotate(45deg) scale(1.2); } 100% { transform: rotate(0deg); } }
-        .atk-stab { animation: stab-anim 0.2s ease-out; }
-        @keyframes stab-anim { 0% { transform: scale(1); } 50% { transform: translateX(25px) scaleX(1.5); } 100% { transform: scale(1); } }
-        .atk-smash { animation: smash-anim 0.4s ease-in; }
-        @keyframes smash-anim { 0% { transform: translateY(0); } 30% { transform: translateY(-20px) scale(1.1); } 100% { transform: translateY(0) scale(1.4); } }
 
         .particle { position: absolute; pointer-events: none; z-index: 40; border-radius: 50%; opacity: 0.8; }
         @keyframes particle-fade { to { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
@@ -95,27 +112,15 @@
         .upgrade-info { text-align: center; font-size: 13px; color: #bdc3c7; margin-bottom: 10px; }
         
         /* === 강화 결과 연출용 CSS === */
-
-        /* 1. 대형 결과 텍스트 (모달보다 위에 뜸) */
         #upgrade-overlay-text {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.5);
-            font-size: 60px;
-            font-weight: 900;
-            text-shadow: 0 0 10px #000, 0 0 20px #000;
-            z-index: 500; /* 모달(200)보다 훨씬 높게 */
-            opacity: 0;
-            pointer-events: none;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            font-size: 60px; font-weight: 900; text-shadow: 0 0 10px #000, 0 0 20px #000;
+            z-index: 500; opacity: 0; pointer-events: none;
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
             white-space: nowrap;
         }
-        #upgrade-overlay-text.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.2); /* 확 커지는 효과 */
-        }
+        #upgrade-overlay-text.show { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
 
-        /* 2. 모달 흔들림 (실패 시) */
         @keyframes modal-shake {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             25% { transform: translate(-52%, -50%) rotate(-5deg); }
@@ -125,7 +130,6 @@
         }
         .anim-shake { animation: modal-shake 0.4s ease-in-out; border-color: #e74c3c !important; }
 
-        /* 3. 모달 번쩍임 (성공 시) */
         @keyframes modal-glow {
             0% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.7); border-color: #f1c40f; }
             50% { box-shadow: 0 0 50px 20px rgba(241, 196, 15, 0.5); border-color: #fff; background-color: #4a3b18; }
@@ -133,18 +137,8 @@
         }
         .anim-success { animation: modal-glow 0.6s ease-out; }
 
-        /* 4. UI 위에 뜨는 파티클 */
-        .ui-particle {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 400; /* 모달 위 */
-            animation: ui-particle-fly 0.8s ease-out forwards;
-        }
-        @keyframes ui-particle-fly {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
-        }
+        .ui-particle { position: absolute; border-radius: 50%; pointer-events: none; z-index: 400; animation: ui-particle-fly 0.8s ease-out forwards; }
+        @keyframes ui-particle-fly { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
 
         /* 대화창 */
         #dialog-box { display: none; position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 500px; background: rgba(0,0,0,0.95); border: 2px solid #f1c40f; padding: 20px; border-radius: 10px; z-index: 300; }
@@ -154,15 +148,36 @@
         .dmg-text { position: absolute; font-weight: 900; font-size: 22px; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 50; animation: flyUp 0.6s forwards; }
         @keyframes flyUp { to { transform: translateY(-50px); opacity: 0; } }
 
+        /* 공격 애니메이션 */
+        .atk-slash { animation: slash-anim 0.3s ease-out; }
+        @keyframes slash-anim { 0% { transform: rotate(0deg); } 50% { transform: rotate(45deg) scale(1.2); } 100% { transform: rotate(0deg); } }
+        .atk-stab { animation: stab-anim 0.2s ease-out; }
+        @keyframes stab-anim { 0% { transform: scale(1); } 50% { transform: translateX(25px) scaleX(1.5); } 100% { transform: scale(1); } }
+        .atk-smash { animation: smash-anim 0.4s ease-in; }
+        @keyframes smash-anim { 0% { transform: translateY(0); } 30% { transform: translateY(-20px) scale(1.1); } 100% { transform: translateY(0) scale(1.4); } }
+
         #map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; opacity: 0; pointer-events: none; z-index: 999; transition: opacity 0.4s; }
+
+        /* === MOBILE CONTROLS === */
+        #mobile-controls { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+        .joystick-area { position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border-radius: 50%; pointer-events: auto; border: 2px solid rgba(255, 255, 255, 0.2); touch-action: none; }
+        .joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        .atk-btn-mobile { position: absolute; bottom: 40px; right: 40px; width: 90px; height: 90px; background: rgba(231, 76, 60, 0.5); border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; touch-action: none; user-select: none; }
+        .atk-btn-mobile:active { background: rgba(231, 76, 60, 0.8); transform: scale(0.95); }
     </style>
 </head>
 <body>
 
 <div id="game-screen">
     <div id="map-overlay"></div>
-
     <div id="upgrade-overlay-text"></div>
+
+    <div id="mobile-controls">
+        <div id="joystick-base" class="joystick-area">
+            <div id="joystick-stick" class="joystick-knob"></div>
+        </div>
+        <div id="mobile-atk-btn" class="atk-btn-mobile">⚔️</div>
+    </div>
 
     <div id="ui-main">
         <div class="main-stat-row"><strong>🛡️ <span id="main-name">용사</span></strong> <span>Lv.<span id="main-lv">1</span></span></div>
@@ -254,7 +269,7 @@
 
     <div id="blacksmith-modal" class="modal">
         <h2 style="color:#f1c40f; margin-top:0;">⚒️ 장비 합성 (강화)</h2>
-        <div class="upgrade-info">같은 부위/등급 아이템 3개를 합성하여<br>상위 등급 아이템을 제작합니다.</div>
+        <div class="upgrade-info">같은 부위/등급 아이템 3개를 합성하여<br>상위 등급 아이템을 제작합니다.<br><span style="color:#ff3838; font-weight:bold;">(전설 3개 합성 시 100% '신화' 등급!)</span></div>
         <div class="upgrade-container">
             <div id="slot-0" class="upgrade-slot" onclick="removeUpgradeItem(0)"></div>
             <div id="slot-1" class="upgrade-slot" onclick="removeUpgradeItem(1)"></div>
@@ -308,7 +323,10 @@
         questList: [
             { id: 'q1', title: '슬라임 소탕', target: 'slime', count: 0, max: 5, rewardGold: 300, rewardExp: 150, minLv: 1, desc: "마을 앞 들판의 슬라임 5마리를 처치하세요." },
             { id: 'q2', title: '오크의 위협', target: 'orc', count: 0, max: 3, rewardGold: 600, rewardExp: 300, minLv: 5, desc: "지하감옥의 오크 3마리를 처치하세요." },
-            { id: 'q3', title: '악마 토벌', target: 'demon', count: 0, max: 1, rewardGold: 1500, rewardExp: 500, minLv: 10, desc: "화산의 악마를 처치하세요." }
+            { id: 'q3', title: '악마 토벌', target: 'demon', count: 0, max: 1, rewardGold: 1500, rewardExp: 500, minLv: 10, desc: "화산의 악마를 처치하세요." },
+            { id: 'q4', title: '설원 조사', target: 'ice_slime', count: 0, max: 10, rewardGold: 5000, rewardExp: 2000, minLv: 15, desc: "설원의 아이스 슬라임 10마리를 처치하세요." },
+            { id: 'q5', title: '늪지대의 왕', target: 'hydra', count: 0, max: 5, rewardGold: 15000, rewardExp: 6000, minLv: 20, desc: "늪지대의 히드라 5마리를 처치하세요." },
+            { id: 'q6', title: '용 사냥꾼', target: 'dragon', count: 0, max: 1, rewardGold: 100000, rewardExp: 50000, minLv: 30, desc: "성 최상층의 드래곤을 처치하세요." }
         ],
         currentQuestIdx: 0,
         dps: { total: 0, start: 0, max: 0 },
@@ -321,32 +339,41 @@
         town: { name: "평화로운 마을", minLv: 1, bgColor: "#1e3723", borderColor: "#2ecc71", bgPattern: 'none', mobs: [], rewardMult: 0, isSafe: true },
         field: { name: "평화로운 들판", minLv: 1, bgColor: "#2c3e50", borderColor: "#34495e", bgPattern: 'grid', mobs: ['slime', 'ghost'], rewardMult: 1 },
         dungeon: { name: "어두운 지하감옥", minLv: 5, bgColor: "#1a1a1a", borderColor: "#2c3e50", bgPattern: 'grid', mobs: ['orc', 'ghost'], rewardMult: 1.5 },
-        volcano: { name: "불타는 화산", minLv: 10, bgColor: "#4b1300", borderColor: "#c0392b", bgPattern: 'grid', mobs: ['orc', 'demon'], rewardMult: 2.5 }
+        volcano: { name: "불타는 화산", minLv: 10, bgColor: "#4b1300", borderColor: "#c0392b", bgPattern: 'grid', mobs: ['orc', 'demon'], rewardMult: 2.5 },
+        frozen: { name: "얼어붙은 설원", minLv: 15, bgColor: "#dff9fb", borderColor: "#7ed6df", bgPattern: 'grid', mobs: ['ice_slime', 'yeti'], rewardMult: 3.5 },
+        swamp: { name: "독기 어린 늪지대", minLv: 20, bgColor: "#2d3436", borderColor: "#55efc4", bgPattern: 'grid', mobs: ['mud_golem', 'hydra'], rewardMult: 5.0 },
+        castle: { name: "멸망한 국왕의 성", minLv: 30, bgColor: "#2d3436", borderColor: "#d63031", bgPattern: 'grid', mobs: ['dark_knight', 'dragon'], rewardMult: 10.0 }
     };
 
     const MOB_DATA = {
         slime: { name: '슬라임', hp: 50, atk: 15, speed: 1.5, class: 'mob-slime', icon: '💧', gold: 40, exp: 30, type: 'slime' },
-        orc:   { name: '오크', hp: 200, atk: 50, speed: 1.2, class: 'mob-orc', icon: '🗡', gold: 120, exp: 90, type: 'orc' },
+        orc:   { name: '오크', hp: 200, atk: 50, speed: 1.2, class: 'mob-orc', icon: '👹', gold: 120, exp: 100, type: 'orc' },
         ghost: { name: '유령', hp: 40, atk: 25, speed: 3.5, class: 'mob-ghost', icon: '👻', gold: 60, exp: 45, type: 'ghost' },
-        demon: { name: '악마', hp: 400, atk: 100, speed: 1.8, class: 'mob-demon', icon: '👿', gold: 300, exp: 250, type: 'demon' }
+        demon: { name: '악마', hp: 400, atk: 100, speed: 1.8, class: 'mob-demon', icon: '👿', gold: 300, exp: 270, type: 'demon' },
+        ice_slime: { name: '아이스 슬라임', hp: 600, atk: 120, speed: 1.0, class: 'mob-ice_slime', icon: '❄️', gold: 550, exp: 400, type: 'ice_slime' },
+        yeti:      { name: '예티', hp: 800, atk: 150, speed: 1.3, class: 'mob-yeti', icon: '🦍', gold: 700, exp: 700, type: 'yeti' },
+        mud_golem: { name: '진흙 골렘', hp: 1200, atk: 200, speed: 0.8, class: 'mob-mud_golem', icon: '🗿', gold: 1200, exp: 800, type: 'mud_golem' },
+        hydra:     { name: '히드라', hp: 1500, atk: 350, speed: 1.4, class: 'mob-hydra', icon: '🐍', gold: 1200, exp: 2000, type: 'hydra' },
+        dark_knight:{ name: '암흑 기사', hp: 3000, atk: 350, speed: 2.0, class: 'mob-dark_knight', icon: '🛡️', gold: 2500, exp: 3000, type: 'dark_knight' },
+        dragon:    { name: '드래곤', hp: 6666, atk: 666, speed: 2.5, class: 'mob-dragon', icon: '🐉', gold: 5000, exp: 6666, type: 'dragon' }
     };
 
     const NPC_DATA = {
         elder: { name: "이촌장 바르단", icon: "👴", x: 475, y: 250, type: 'quest_giver' },
         merchant: { name: "상인 에린", icon: "👩‍🔧", x: 200, y: 300, type: 'shop' },
-        // [추가] 대장장이 헨리
         blacksmith: { name: "대장장이 헨리", icon: "⚒️", x: 700, y: 350, type: 'blacksmith' }
     };
 
-    // [추가] 강화 확률 데이터
+    // [수정] 전설->신화 업그레이드 데이터 추가
     const UPGRADE_DATA = {
         'common': { success: 0.8, cost: 200, next: 'rare', color: '#bdc3c7' },
         'rare':   { success: 0.5, cost: 500, next: 'epic', color: '#3498db' },
         'epic':   { success: 0.25, cost: 1500, next: 'legend', color: '#9b59b6' },
-        'legend': { success: 0, cost: 0, next: null, color: '#f1c40f' }
+        'legend': { success: 1.0, cost: 5000, next: 'mythic', color: '#f1c40f' }, // 전설 합성 가능
+        'mythic': { success: 0, cost: 0, next: null, color: '#ff3838' } // 신화 (최종)
     };
 
-    const GRADE_WEIGHT = { 'legend': 4, 'epic': 3, 'rare': 2, 'common': 1 };
+    const GRADE_WEIGHT = { 'mythic': 5, 'legend': 4, 'epic': 3, 'rare': 2, 'common': 1 };
 
     const WEAPON_ARCHETYPES = {
         slash: { suffix: " 검", type: "slash", color: "#3498db", rangeMod: 1.0, dmgMod: 1.0 },
@@ -360,11 +387,13 @@
         robe:  { suffix: " 로브", type: "robe", defMod: 1.0, speedMod: 1.0, coolMod: 0.7 }
     };
 
+    // [수정] 신화 등급 접두사 추가 (압도적 성능)
     const ITEM_PREFIX = [
         { name: "낡은", grade: "common", wBonus: 5, aBonus: 5, color: "grade-common" },
-        { name: "강철", grade: "rare", wBonus: 20, aBonus: 12, color: "grade-rare" },
-        { name: "고대", grade: "epic", wBonus: 55, aBonus: 25, color: "grade-epic" },
-        { name: "전설의", grade: "legend", wBonus: 175, aBonus: 70, color: "grade-legend" }
+        { name: "강철", grade: "rare", wBonus: 20, aBonus: 20, color: "grade-rare" },
+        { name: "고대", grade: "epic", wBonus: 60, aBonus: 60, color: "grade-epic" },
+        { name: "전설의", grade: "legend", wBonus: 175, aBonus: 150, color: "grade-legend" },
+        { name: "신화의", grade: "mythic", wBonus: 600, aBonus: 500, color: "grade-mythic" }
     ];
 
     /* === 초기화 === */
@@ -397,7 +426,7 @@
 
         spawnNPC('elder');
         spawnNPC('merchant');
-        spawnNPC('blacksmith'); // 대장장이 추가
+        spawnNPC('blacksmith');
 
         spawnDummy(850, 350);
         spawnDummy(850, 420);
@@ -459,8 +488,8 @@
             addBtn("상점 열기", () => { dBox.style.display='none'; toggleModal('shop-modal'); });
             addBtn("다음에", () => dBox.style.display='none');
         }
-        else if (npc.type === 'blacksmith') { // 대장장이 상호작용
-            dText.innerText = "이봐! 약해빠진 장비는 내게 가져오게. 더 강하게 만들어주지.";
+        else if (npc.type === 'blacksmith') {
+            dText.innerText = "같은 부위, 같은 등급 장비 3개를 가져오면 다음등급으로 강화해주지";
             addBtn("강화하기", () => { dBox.style.display='none'; openBlacksmith(); });
             addBtn("떠나기", () => dBox.style.display='none');
         }
@@ -636,19 +665,17 @@
         }
     }
 
-    // UI(모달) 위에서 터지는 파티클 생성 함수
     function createUIParticles(x, y, color, count) {
         const screen = document.getElementById('game-screen');
         for (let i = 0; i < count; i++) {
             const p = document.createElement('div');
             p.className = 'ui-particle';
-            p.style.width = (Math.random()*10+5)+'px'; // 좀 더 크게
+            p.style.width = (Math.random()*10+5)+'px';
             p.style.height = p.style.width;
             p.style.background = color;
             p.style.left = x + 'px';
             p.style.top = y + 'px';
         
-            // 사방으로 퍼지게 설정
             const angle = Math.random() * Math.PI * 2;
             const velocity = Math.random() * 150 + 50;
             const tx = Math.cos(angle) * velocity;
@@ -709,7 +736,7 @@
                 target.hp -= dmg;
                 if(target.hp <= 0) killMonster(target);
             }
-            showDamage(dmg, target.x, target.y, (wp && wp.grade==='legend' ? "#f1c40f" : "#fff"));
+            showDamage(dmg, target.x, target.y, (wp && wp.grade==='legend' ? "#f1c40f" : (wp && wp.grade==='mythic' ? '#ff3838' : "#fff")));
             createParticles(target.x+20, target.y+20, (wp ? wp.pColor : '#fff'), 10);
         }
     }
@@ -796,7 +823,7 @@
         });
     }
 
-    /* === 가챠 시스템 수정 (전설 제외) === */
+    /* === 가챠 시스템 === */
     function gachaDraw() {
         if(state.player.gold < 100) { 
             alert("골드가 부족합니다!"); 
@@ -804,13 +831,11 @@
         }
         state.player.gold -= 100;
         
-        // [변경] 확률: 일반 60, 희귀 35, 에픽 5, 전설 0
         const rand = Math.random() * 100;
         let gIdx;
-        if(rand < 60) gIdx = 0;      // Common
-        else if(rand < 95) gIdx = 1; // Rare
-        else gIdx = 2;               // Epic
-        // gIdx = 3 (Legend)은 여기서 나오지 않음
+        if(rand < 60) gIdx = 0;      
+        else if(rand < 95) gIdx = 1; 
+        else gIdx = 2;               
 
         const prefix = ITEM_PREFIX[gIdx];
         const isWeapon = Math.random() > 0.5;
@@ -854,7 +879,7 @@
         renderInventory();
     }
 
-    /* === 대장장이(강화) 시스템 구현 === */
+    /* === 대장장이(강화) 시스템 === */
     function openBlacksmith() {
         state.upgradeSlots = [];
         toggleModal('blacksmith-modal');
@@ -862,7 +887,6 @@
     }
 
     function renderUpgradeUI() {
-        // 1. 슬롯 그리기
         for(let i=0; i<3; i++) {
             const slotEl = document.getElementById(`slot-${i}`);
             slotEl.innerHTML = '';
@@ -873,11 +897,16 @@
                 slotEl.innerHTML = '⚔️'; 
                 if(item.type === 'armor') slotEl.innerHTML = '🛡️';
                 slotEl.classList.add('filled');
-                slotEl.style.borderColor = item.color === 'grade-rare' ? '#3498db' : (item.color === 'grade-epic' ? '#9b59b6' : '#bdc3c7');
+                // 색상 반영
+                let borderColor = '#bdc3c7';
+                if(item.grade === 'rare') borderColor = '#3498db';
+                else if(item.grade === 'epic') borderColor = '#9b59b6';
+                else if(item.grade === 'legend') borderColor = '#f1c40f';
+                
+                slotEl.style.borderColor = borderColor;
             }
         }
 
-        // 2. 상태 텍스트 업데이트
         const statusEl = document.getElementById('upgrade-status');
         const btnEl = document.getElementById('upgrade-btn');
         
@@ -899,26 +928,21 @@
             btnEl.style.opacity = 0.5;
         }
 
-        // 3. 재료 선택 리스트 (필터링)
         const listEl = document.getElementById('upgrade-inv-list');
         listEl.innerHTML = '';
 
         let items = state.player.inventory.filter(item => {
-            // 장착중인 아이템 제외
             if (state.player.weapon && state.player.weapon.id === item.id) return false;
             if (state.player.armor && state.player.armor.id === item.id) return false;
-            // 이미 슬롯에 올라간 아이템 제외
             if (state.upgradeSlots.some(slot => slot.id === item.id)) return false;
             
-            // 첫 번째 슬롯이 채워져 있다면, 등급과 타입이 같아야 함
             if (state.upgradeSlots.length > 0) {
                 const base = state.upgradeSlots[0];
                 if (item.grade !== base.grade || item.type !== base.type) return false;
             }
             
-            // 전설 등급은 재료로 사용 불가 (최종 단계)
-            if (item.grade === 'legend') return false;
-
+            // [수정] 신화 등급은 더 이상 강화 불가
+            if (item.grade === 'mythic') return false;
             return true;
         });
 
@@ -959,37 +983,30 @@
         }
     
         state.player.gold -= uData.cost;
-        const isSuccess = Math.random() < uData.success;
+        const isSuccess = Math.random() < uData.success; // 전설->신화는 success가 1.0 (100%)
         
-        // 재료 소모
         state.upgradeSlots.forEach(mat => {
             const idx = state.player.inventory.findIndex(i => i.id === mat.id);
             if(idx > -1) state.player.inventory.splice(idx, 1);
         });
     
-        // 모달 및 텍스트 요소 가져오기
         const modal = document.getElementById('blacksmith-modal');
         const overlayText = document.getElementById('upgrade-overlay-text');
         
-        // 애니메이션 클래스 초기화 (재실행을 위해)
         modal.classList.remove('anim-shake', 'anim-success');
-        void modal.offsetWidth; // 리플로우 강제 (애니메이션 리셋 핵)
+        void modal.offsetWidth;
     
-        // 화면 중앙 좌표 (950x700 기준)
-        const centerX = 475;
-        const centerY = 350;
+        const centerX = 475, centerY = 350;
     
         if (isSuccess) {
-            // === 성공 처리 ===
-            // 1. 아이템 생성 로직 (기존과 동일)
             let nextGIdx = 0;
             if (baseItem.grade === 'common') nextGIdx = 1;
             else if (baseItem.grade === 'rare') nextGIdx = 2;
             else if (baseItem.grade === 'epic') nextGIdx = 3;
+            else if (baseItem.grade === 'legend') nextGIdx = 4; // 신화 등급 인덱스
     
             const prefix = ITEM_PREFIX[nextGIdx];
             let newItem;
-            // 타입 유지 로직
             if (baseItem.type === 'weapon') {
                 const types = Object.keys(WEAPON_ARCHETYPES);
                 const arch = WEAPON_ARCHETYPES[types[Math.floor(Math.random() * types.length)]];
@@ -1009,37 +1026,33 @@
             }
             state.player.inventory.push(newItem);
             
-            // === [변경] 시각적 효과 ===
-            modal.classList.add('anim-success'); // 모달 황금빛 발광
-            createUIParticles(centerX, centerY, "#f1c40f", 60); // 화면 중앙 폭죽
+            modal.classList.add('anim-success');
+            // 신화 등급이면 붉은 파티클, 아니면 노란 파티클
+            const pColor = prefix.grade === 'mythic' ? "#ff3838" : "#f1c40f";
+            createUIParticles(centerX, centerY, pColor, 60);
             
-            // 대형 텍스트 표시
-            overlayText.innerText = "SUCCESS!!";
-            overlayText.style.color = "#f1c40f"; // 황금색
+            overlayText.innerText = prefix.grade === 'mythic' ? "MYTHIC!!" : "SUCCESS!!";
+            overlayText.style.color = pColor;
             overlayText.classList.add('show');
             
             document.getElementById('upgrade-status').innerText = "강화 성공!";
             document.getElementById('upgrade-status').style.color = "#2ecc71";
             
         } else {
-            // === 실패 처리 ===
             const savedItem = state.upgradeSlots[Math.floor(Math.random() * 3)];
             state.player.inventory.push(savedItem);
     
-            // === [변경] 시각적 효과 ===
-            modal.classList.add('anim-shake'); // 모달 흔들림
-            createUIParticles(centerX, centerY, "#7f8c8d", 30); // 회색 파편
+            modal.classList.add('anim-shake');
+            createUIParticles(centerX, centerY, "#7f8c8d", 30);
             
-            // 대형 텍스트 표시
             overlayText.innerText = "FAILED...";
-            overlayText.style.color = "#e74c3c"; // 붉은색
+            overlayText.style.color = "#e74c3c";
             overlayText.classList.add('show');
     
             document.getElementById('upgrade-status').innerText = "강화 실패 (재료 1개 복구)";
             document.getElementById('upgrade-status').style.color = "#e74c3c";
         }
     
-        // 1.5초 뒤 텍스트 숨김
         setTimeout(() => {
             overlayText.classList.remove('show');
         }, 1200);
@@ -1171,7 +1184,6 @@
         state.keys = {};
         if(id === 'world-map-modal') renderWorldMap();
         if(id === 'inventory-modal') renderInventory();
-        // 대장장이 모달을 닫을 때 슬롯 초기화
         if(id === 'blacksmith-modal' && isVisible) state.upgradeSlots = [];
     }
 
@@ -1267,38 +1279,29 @@
         el.style.display = isVisible ? 'block' : 'none';
     }
 
-    // --- 세이브/로드 시스템 ---
-
-    // 1. 현재 게임 상태를 .json 파일로 저장 (내 컴퓨터로 다운로드)
     function exportSaveFile() {
-        // 저장할 핵심 데이터 객체 구성
         const saveData = {
             player: state.player,
-            // inventory: state.inventory는 삭제 (state.player.inventory에 이미 있으므로)
             currentStage: state.currentStage,
             saveDate: new Date().toLocaleString()
         };
 
-        // 데이터를 JSON 문자열로 변환
         const dataStr = JSON.stringify(saveData, null, 4);
         const blob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         
-        // 가상의 앵커 태그를 생성하여 다운로드 트리거
         const link = document.createElement("a");
         link.href = url;
         link.download = `Chronicles_Save_Lv${state.player.lv}.json`;
         document.body.appendChild(link);
         link.click();
         
-        // 사용 후 메모리 해제 및 태그 제거
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
         showDamage("시스템: 파일 저장 완료!", 400, 300, "#f1c40f");
     }
 
-    // 2. 내 컴퓨터의 .json 파일을 읽어서 게임에 적용
     function importSaveFile(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -1308,27 +1311,20 @@
             try {
                 const data = JSON.parse(e.target.result);
                 
-                // 전역 상태(state)에 데이터 덮어쓰기
                 state.player = data.player;
-                // state.inventory 로직 삭제 (player 안에 포함됨)
                 state.currentStage = data.currentStage || 'town';
                 
-                // 데이터 적용 후 UI 및 화면 갱신
                 updateUI();
                 renderInventory();
                 
-                // [수정] 맵 로딩 로직 개선
-                clearEntities(); // 기존 엔티티 삭제
-                const stage = STAGES[state.currentStage]; // 현재 스테이지 정보 가져오기
+                clearEntities(); 
+                const stage = STAGES[state.currentStage];
 
                 if (state.currentStage === 'town') {
                     setupTown();
                 } else {
-                    // 마을이 아닐 경우(필드, 던전 등)에도 배경 설정 및 몬스터 소환
                     applyStageVisuals(stage);
                     document.getElementById('current-map-name').innerText = stage.name;
-                    
-                    // 세이브 파일엔 몬스터 정보가 없으므로 새로 생성
                     for(let i=0; i<4; i++) spawnMonster();
                 }
                 
@@ -1346,6 +1342,77 @@
         if(e.code==='Space') tryAttack(); 
     });
     window.addEventListener('keyup', e => state.keys[e.key.toLowerCase()] = false);
+
+    /* === 모바일 컨트롤러 로직 추가 === */
+    const joystickBase = document.getElementById('joystick-base');
+    const joystickStick = document.getElementById('joystick-stick');
+    const mobileAtkBtn = document.getElementById('mobile-atk-btn');
+    let joyTouchId = null;
+
+    // 모바일 감지 (간단한 체크)
+    if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0)) {
+        document.getElementById('mobile-controls').style.display = 'block';
+    }
+
+    joystickBase.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        joyTouchId = touch.identifier;
+        moveJoystick(touch);
+    }, {passive: false});
+
+    joystickBase.addEventListener('touchmove', e => {
+        e.preventDefault();
+        for(let i=0; i<e.changedTouches.length; i++) {
+            if(e.changedTouches[i].identifier === joyTouchId) {
+                moveJoystick(e.changedTouches[i]);
+                break;
+            }
+        }
+    }, {passive: false});
+
+    function endJoystick() {
+        joyTouchId = null;
+        joystickStick.style.transform = `translate(-50%, -50%)`;
+        state.keys['w'] = false; state.keys['s'] = false;
+        state.keys['a'] = false; state.keys['d'] = false;
+    }
+
+    joystickBase.addEventListener('touchend', e => endJoystick());
+    joystickBase.addEventListener('touchcancel', e => endJoystick());
+
+    function moveJoystick(touch) {
+        const rect = joystickBase.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        const dx = touch.clientX - centerX;
+        const dy = touch.clientY - centerY;
+        const dist = Math.min(Math.hypot(dx, dy), 35); // Max radius
+        const angle = Math.atan2(dy, dx);
+        
+        const moveX = Math.cos(angle) * dist;
+        const moveY = Math.sin(angle) * dist;
+        
+        joystickStick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+        
+        // 각도에 따라 키 상태 업데이트 (8방향 지원)
+        const deg = angle * (180 / Math.PI);
+        state.keys['w'] = (deg > -150 && deg < -30);
+        state.keys['s'] = (deg > 30 && deg < 150);
+        state.keys['a'] = (Math.abs(deg) > 120);
+        state.keys['d'] = (Math.abs(deg) < 60);
+    }
+
+    mobileAtkBtn.addEventListener('touchstart', e => {
+        e.preventDefault();
+        mobileAtkBtn.style.transform = 'scale(0.9)';
+        tryAttack();
+    });
+    mobileAtkBtn.addEventListener('touchend', e => {
+        e.preventDefault();
+        mobileAtkBtn.style.transform = 'scale(1)';
+    });
 
     init();
 </script>
