@@ -2,19 +2,45 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Chronicles Online - Reforged (Mobile Support)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chronicles Online - Reforged (Final Mobile)</title>
     <style>
-        body { margin: 0; background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
+        /* 모바일 화면 맞춤 및 스크롤 방지 */
+        body { 
+            margin: 0; 
+            background: #0f0f0f; 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden; 
+            touch-action: none; 
+        }
         
+        #game-container {
+            position: relative;
+            width: 950px;
+            height: 700px;
+            /* 화면 스케일링을 위한 컨테이너 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
         #game-screen { 
-            position: relative; width: 950px; height: 700px; 
+            position: absolute; 
+            width: 950px; height: 700px; 
             background-color: #2c3e50; 
             background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); 
             background-size: 40px 40px; 
-            border: 4px solid #34495e; box-shadow: 0 0 40px rgba(0,0,0,0.8); 
+            border: 4px solid #34495e; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.8); 
             overflow: hidden;
             transition: background-color 0.8s, border-color 0.8s, background-image 0.8s;
+            /* 스케일링 기준점 중앙 설정 */
+            transform-origin: center center;
         }
         
         #ui-main { position: absolute; top: 15px; left: 15px; width: 240px; background: rgba(0,0,0,0.85); padding: 15px; border-radius: 10px; border: 2px solid #7f8c8d; z-index: 100; pointer-events: none; }
@@ -40,18 +66,8 @@
         .grade-rare { color: #3498db; }
         .grade-epic { color: #9b59b6; }
         .grade-legend { color: #f1c40f; text-shadow: 0 0 5px #f39c12; font-weight: bold; }
-        
-        /* [추가] 신화 등급 스타일 (붉게 빛남) */
-        .grade-mythic { 
-            color: #ff3838; 
-            font-weight: 900; 
-            text-shadow: 0 0 5px #ff0000, 0 0 10px #c0392b; 
-            animation: mythic-glow 1.5s infinite alternate; 
-        }
-        @keyframes mythic-glow { 
-            0% { text-shadow: 0 0 5px #ff0000; } 
-            100% { text-shadow: 0 0 15px #ff0000, 0 0 20px #fff; } 
-        }
+        .grade-mythic { color: #ff3838; font-weight: 900; text-shadow: 0 0 5px #ff0000, 0 0 10px #c0392b; animation: mythic-glow 1.5s infinite alternate; }
+        @keyframes mythic-glow { 0% { text-shadow: 0 0 5px #ff0000; } 100% { text-shadow: 0 0 15px #ff0000, 0 0 20px #fff; } }
 
         .entity { position: absolute; display: flex; justify-content: center; align-items: center; border-radius: 5px; z-index: 10; transition: transform 0.1s; }
         #player { width: 44px; height: 44px; background: #3498db; border: 2px solid #fff; z-index: 20; }
@@ -62,22 +78,17 @@
         .mob-orc { background: #e17055; width: 48px; height: 48px; }
         .mob-ghost { background: #a29bfe; opacity: 0.8; }
         .mob-demon { background: #c0392b; width: 55px; height: 55px; border: 2px solid #f1c40f; }
-
         .mob-ice_slime { background: #81ecec; border: 2px solid #74b9ff; }
         .mob-yeti { background: #dfe6e9; width: 48px; height: 48px; border: 2px solid #b2bec3; }
-        
         .mob-mud_golem { background: #8d6e63; width: 50px; height: 50px; border: 2px solid #5d4037; }
         .mob-hydra { background: #6c5ce7; width: 50px; height: 50px; border: 2px solid #a29bfe; }
-        
         .mob-dark_knight { background: #2d3436; width: 46px; height: 46px; border: 2px solid #a29bfe; box-shadow: 0 0 5px #a29bfe; }
         .mob-dragon { background: #2d3436; width: 70px; height: 70px; border: 3px solid #d63031; box-shadow: 0 0 15px rgba(214, 48, 49, 0.6); }
 
-        /* NPC 스타일 */
         .npc { width: 44px; height: 44px; border: 2px solid #f1c40f; background: #9b59b6; cursor: pointer; z-index: 15; }
         .npc-mark { position: absolute; top: -30px; font-size: 24px; font-weight: bold; animation: bounce 1s infinite; text-shadow: 0 0 5px yellow; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-        /* 마을 오브젝트 */
         .plaza-circle { position: absolute; width: 300px; height: 300px; border-radius: 50%; border: 5px dashed rgba(255,255,255,0.1); top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 1; }
         .house { position: absolute; background: #8e44ad; border: 2px solid #9b59b6; z-index: 5; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px #000; }
         .dummy { width: 40px; height: 60px; background: #d35400; border: 2px solid #a04000; border-radius: 5px; }
@@ -105,13 +116,11 @@
         .map-select-btn.current { border-color: #2ecc71; background: #27ae60; }
         .map-select-btn:not(.locked):not(.current):hover { border-color: #f1c40f; background: #3d566e; }
 
-        /* 대장장이 강화 UI */
         .upgrade-container { display: flex; justify-content: center; gap: 15px; margin: 20px 0; }
         .upgrade-slot { width: 60px; height: 60px; background: #1a1a1a; border: 2px dashed #7f8c8d; border-radius: 5px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; position: relative; }
         .upgrade-slot.filled { border: 2px solid #f1c40f; background: #34495e; }
         .upgrade-info { text-align: center; font-size: 13px; color: #bdc3c7; margin-bottom: 10px; }
         
-        /* === 강화 결과 연출용 CSS === */
         #upgrade-overlay-text {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
             font-size: 60px; font-weight: 900; text-shadow: 0 0 10px #000, 0 0 20px #000;
@@ -140,15 +149,15 @@
         .ui-particle { position: absolute; border-radius: 50%; pointer-events: none; z-index: 400; animation: ui-particle-fly 0.8s ease-out forwards; }
         @keyframes ui-particle-fly { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
 
-        /* 대화창 */
         #dialog-box { display: none; position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 500px; background: rgba(0,0,0,0.95); border: 2px solid #f1c40f; padding: 20px; border-radius: 10px; z-index: 300; }
         .dialog-btn { background: #3498db; color: white; border: none; padding: 8px 15px; margin-top: 10px; cursor: pointer; border-radius: 4px; margin-right: 5px; }
         .dialog-btn:hover { background: #2980b9; }
 
+        /* 데미지 텍스트: 크리티컬 효과 추가 */
         .dmg-text { position: absolute; font-weight: 900; font-size: 22px; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 50; animation: flyUp 0.6s forwards; }
+        .dmg-crit { font-size: 36px !important; color: #ff3838 !important; text-shadow: 2px 2px 0 #fff, 0 0 10px #ff0000 !important; z-index: 60; }
         @keyframes flyUp { to { transform: translateY(-50px); opacity: 0; } }
 
-        /* 공격 애니메이션 */
         .atk-slash { animation: slash-anim 0.3s ease-out; }
         @keyframes slash-anim { 0% { transform: rotate(0deg); } 50% { transform: rotate(45deg) scale(1.2); } 100% { transform: rotate(0deg); } }
         .atk-stab { animation: stab-anim 0.2s ease-out; }
@@ -168,141 +177,144 @@
 </head>
 <body>
 
-<div id="game-screen">
-    <div id="map-overlay"></div>
-    <div id="upgrade-overlay-text"></div>
+<div id="game-container">
+    <div id="game-screen">
+        <div id="map-overlay"></div>
+        <div id="upgrade-overlay-text"></div>
 
-    <div id="mobile-controls">
-        <div id="joystick-base" class="joystick-area">
-            <div id="joystick-stick" class="joystick-knob"></div>
-        </div>
-        <div id="mobile-atk-btn" class="atk-btn-mobile">⚔️</div>
-    </div>
-
-    <div id="ui-main">
-        <div class="main-stat-row"><strong>🛡️ <span id="main-name">용사</span></strong> <span>Lv.<span id="main-lv">1</span></span></div>
-        <div class="main-stat-row">HP <div class="bar-bg"><div id="main-hp-bar" class="bar-fill" style="background:#ff7675; width:100%;"></div></div></div>
-        <div class="main-stat-row">EXP <div class="bar-bg"><div id="main-exp-bar" class="bar-fill" style="background:#ffeaa7; width:0%;"></div></div></div>
-        <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
-        <div class="main-stat-row">💰 골드: <span id="main-gold" style="color:#f1c40f">1000</span></div>
-        <div class="main-stat-row">⚔️ 공격력: <span id="main-atk">10</span></div>
-        <div class="main-stat-row">🛡️ 방어력: <span id="main-def">0</span></div>
-        <div class="main-stat-row">🏃 속도: <span id="main-spd">6.0</span></div>
-        <div class="main-stat-row" style="margin-top:5px; color:#55efc4;">📍 <span id="current-map-name">평화로운 마을</span></div>
-    </div>
-
-    <div id="quest-panel">
-        <div style="font-weight:bold; color:#f1c40f; margin-bottom:5px;">📜 퀘스트</div>
-        <div id="quest-title" style="font-weight:bold; font-size:13px;"></div>
-        <div id="quest-prog" style="font-size:12px; color:#ddd;"></div>
-    </div>
-
-    <div id="dps-meter">
-        <div style="color:#e74c3c; font-weight:bold;">⚔️ 전투 분석</div>
-        <div style="font-size:12px;">누적: <span id="dps-val">0</span></div>
-        <div style="font-size:12px;">최대: <span id="max-dmg">0</span></div>
-    </div>
-
-    <div id="minimap"></div>
-
-    <div class="btn-group">
-        <button class="ui-btn" onclick="toggleModal('inventory-modal')">🎒 인벤토리</button>
-        <button class="ui-btn" style="background: #e67e22;" onclick="toggleModal('shop-modal')">🪙 장비 상점</button>
-        <button class="ui-btn" style="background: #2980b9;" onclick="toggleModal('world-map-modal')">🗺️ 월드 이동</button>
-        <button class="ui-btn" style="background: #7f8c8d;" onclick="toggleModal('settings-modal')">⚙️ UI 설정</button>
-    </div>
-
-    <div id="settings-modal" class="modal">
-        <h2 style="color:#f1c40f; margin-top:0;">⚙️ UI 설정</h2>
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
-            <span>메인 메뉴 표시</span>
-            <input type="checkbox" checked onchange="toggleUI('ui-main', this.checked)">
-        </div>
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
-            <span>퀘스트창 표시</span>
-            <input type="checkbox" checked onchange="toggleUI('quest-panel', this.checked)">
-        </div>
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
-            <span>미니맵 표시</span>
-            <input type="checkbox" checked onchange="toggleUI('minimap', this.checked)">
+        <div id="mobile-controls">
+            <div id="joystick-base" class="joystick-area">
+                <div id="joystick-stick" class="joystick-knob"></div>
+            </div>
+            <div id="mobile-atk-btn" class="atk-btn-mobile">⚔️</div>
         </div>
 
-        <hr style="border:0; border-top:1px solid #555; margin:15px 0;">
-        <h3 style="font-size:14px; color:#3498db; margin-bottom:10px;">💾 데이터 관리</h3>
-        
-        <button class="ui-btn" style="width:100%; background:#27ae60; margin-bottom:8px;" onclick="exportSaveFile()">
-            현재 상태 파일로 저장
-        </button>
-        
-        <label for="save-upload" class="ui-btn" style="display:block; text-align:center; background:#2980b9; margin-bottom:10px; cursor:pointer;">
-            세이브 파일 불러오기
-        </label>
-        <input type="file" id="save-upload" style="display:none;" onchange="importSaveFile(event)">
-
-        <button class="ui-btn" style="width:100%; margin-top:10px;" onclick="toggleModal('settings-modal')">닫기</button>
-    </div>
-
-    <div id="inventory-modal" class="modal">
-        <h2 style="margin-top:0; color:#f1c40f;">🎒 인벤토리</h2>
-        <div style="margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
-            <button onclick="setSort('newest')" style="cursor:pointer; font-size:11px; padding:4px 8px;">🕐 최신순</button>
-            <button onclick="setSort('grade')" style="cursor:pointer; font-size:11px; padding:4px 8px;">💎 등급순</button>
-            <button onclick="setFilter('all')" style="cursor:pointer; font-size:11px; padding:4px 8px; background:#555; color:white;">전체</button>
-            <button onclick="setFilter('weapon')" style="cursor:pointer; font-size:11px; padding:4px 8px; background:#2980b9; color:white;">⚔️ 무기</button>
-            <button onclick="setFilter('armor')" style="cursor:pointer; font-size:11px; padding:4px 8px; background:#27ae60; color:white;">🛡️ 방어구</button>
+        <div id="ui-main">
+            <div class="main-stat-row"><strong>🛡️ <span id="main-name">용사</span></strong> <span>Lv.<span id="main-lv">1</span></span></div>
+            <div class="main-stat-row">HP <div class="bar-bg"><div id="main-hp-bar" class="bar-fill" style="background:#ff7675; width:100%;"></div></div></div>
+            <div class="main-stat-row">EXP <div class="bar-bg"><div id="main-exp-bar" class="bar-fill" style="background:#ffeaa7; width:0%;"></div></div></div>
+            <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
+            <div class="main-stat-row">💰 골드: <span id="main-gold" style="color:#f1c40f">1000</span></div>
+            <div class="main-stat-row">⚔️ 공격력: <span id="main-atk">10</span></div>
+            <div class="main-stat-row">🛡️ 방어력: <span id="main-def">0</span></div>
+            <div class="main-stat-row">🏃 속도: <span id="main-spd">6.0</span></div>
+            <div class="main-stat-row" style="margin-top:5px; color:#55efc4;">📍 <span id="current-map-name">평화로운 마을</span></div>
         </div>
-        <div id="inv-list" class="inv-grid"></div>
-        <button onclick="toggleModal('inventory-modal')" style="margin-top:15px; width:100%; padding:10px; background:#c0392b; color:white; border:none; border-radius:5px; cursor:pointer;">닫기</button>
-    </div>
 
-    <div id="shop-modal" class="modal">
-        <h2>🎲 장비 뽑기</h2>
-        <p>1회: <strong>100 Gold</strong></p>
-        <p style="font-size:12px; color:#aaa;">(일반 60%, 희귀 35%, 에픽 5% / <strong>전설 미포함</strong>)</p>
-        <button onclick="gachaDraw()" style="background:#27ae60; color:white; padding:10px 25px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">뽑기 시작!</button>
-        <button onclick="toggleModal('shop-modal')" style="background:#c0392b; color:white; padding:10px 15px; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">닫기</button>
-        <div id="gacha-result" style="margin-top:20px; min-height:80px;"></div>
-    </div>
-
-    <div id="blacksmith-modal" class="modal">
-        <h2 style="color:#f1c40f; margin-top:0;">⚒️ 장비 합성 (강화)</h2>
-        <div class="upgrade-info">같은 부위/등급 아이템 3개를 합성하여<br>상위 등급 아이템을 제작합니다.<br><span style="color:#ff3838; font-weight:bold;">(전설 3개 합성 시 100% '신화' 등급!)</span></div>
-        <div class="upgrade-container">
-            <div id="slot-0" class="upgrade-slot" onclick="removeUpgradeItem(0)"></div>
-            <div id="slot-1" class="upgrade-slot" onclick="removeUpgradeItem(1)"></div>
-            <div id="slot-2" class="upgrade-slot" onclick="removeUpgradeItem(2)"></div>
+        <div id="quest-panel">
+            <div style="font-weight:bold; color:#f1c40f; margin-bottom:5px;">📜 퀘스트</div>
+            <div id="quest-title" style="font-weight:bold; font-size:13px;"></div>
+            <div id="quest-prog" style="font-size:12px; color:#ddd;"></div>
         </div>
-        <div id="upgrade-status" style="text-align:center; margin-bottom:10px; font-weight:bold; color:#f1c40f; height:20px;"></div>
-        <button id="upgrade-btn" onclick="attemptUpgrade()" style="width:100%; padding:10px; background:#e67e22; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; margin-bottom:10px;">합성 시도</button>
-        <hr style="border-color:#555;">
-        <div style="font-size:12px; margin-bottom:5px;">▼ 재료 선택 (클릭하여 등록)</div>
-        <div id="upgrade-inv-list" class="inv-grid" style="height:200px;"></div>
-        <button onclick="toggleModal('blacksmith-modal')" style="margin-top:10px; width:100%; padding:8px; background:#c0392b; color:white; border:none; border-radius:5px; cursor:pointer;">닫기</button>
-    </div>
 
-    <div id="world-map-modal" class="modal">
-        <h2 style="color:#3498db;">🗺️ 지역 선택</h2>
-        <div id="map-list"></div>
-        <button onclick="toggleModal('world-map-modal')" style="margin-top:10px; width:100%; padding:10px; background:#c0392b; color:white; border:none; border-radius:5px; cursor:pointer;">취소</button>
-    </div>
-
-    <div id="dialog-box">
-        <h3 id="dialog-name" style="margin:0 0 10px 0; color:#f1c40f;">NPC</h3>
-        <p id="dialog-text" style="margin:0 0 15px 0; line-height:1.5;">내용</p>
-        <div id="dialog-options"></div>
-    </div>
-
-    <div id="player" class="entity">
-        <div class="player-info">
-            <div class="info-name">나 (Lv.<span id="over-lv">1</span>)</div>
-            <div class="info-stats">❤️<span id="over-hp">100</span> 🛡️<span id="over-def">0</span> ⚔️<span id="over-atk">10</span></div>
-            <div id="over-w" class="grade-common">무기: 맨주먹</div>
-            <div id="over-a" class="grade-common">방어구: 평상복</div>
+        <div id="dps-meter">
+            <div style="color:#e74c3c; font-weight:bold;">⚔️ 전투 분석</div>
+            <div style="font-size:12px;">누적: <span id="dps-val">0</span></div>
+            <div style="font-size:12px;">최대: <span id="max-dmg">0</span></div>
         </div>
-        나
+
+        <div id="minimap"></div>
+
+        <div class="btn-group">
+            <button class="ui-btn" onclick="toggleModal('inventory-modal')">🎒 인벤토리</button>
+            <button class="ui-btn" style="background: #e67e22;" onclick="toggleModal('shop-modal')">🪙 장비 상점</button>
+            <button class="ui-btn" style="background: #2980b9;" onclick="toggleModal('world-map-modal')">🗺️ 월드 이동</button>
+            <button id="auto-btn" class="ui-btn" style="background: #27ae60;" onclick="toggleAutoBattle()">🤖 자동 전투: OFF</button>
+            <button class="ui-btn" style="background: #7f8c8d;" onclick="toggleModal('settings-modal')">⚙️ UI 설정</button>
+        </div>
+
+        <div id="settings-modal" class="modal">
+            <h2 style="color:#f1c40f; margin-top:0;">⚙️ UI 설정</h2>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
+                <span>메인 메뉴 표시</span>
+                <input type="checkbox" checked onchange="toggleUI('ui-main', this.checked)">
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
+                <span>퀘스트창 표시</span>
+                <input type="checkbox" checked onchange="toggleUI('quest-panel', this.checked)">
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
+                <span>미니맵 표시</span>
+                <input type="checkbox" checked onchange="toggleUI('minimap', this.checked)">
+            </div>
+
+            <hr style="border:0; border-top:1px solid #555; margin:15px 0;">
+            <h3 style="font-size:14px; color:#3498db; margin-bottom:10px;">💾 데이터 관리</h3>
+            
+            <button class="ui-btn" style="width:100%; background:#27ae60; margin-bottom:8px;" onclick="exportSaveFile()">
+                현재 상태 파일로 저장
+            </button>
+            
+            <label for="save-upload" class="ui-btn" style="display:block; text-align:center; background:#2980b9; margin-bottom:10px; cursor:pointer;">
+                세이브 파일 불러오기
+            </label>
+            <input type="file" id="save-upload" style="display:none;" onchange="importSaveFile(event)">
+
+            <button class="ui-btn" style="width:100%; margin-top:10px;" onclick="toggleModal('settings-modal')">닫기</button>
+        </div>
+
+        <div id="inventory-modal" class="modal">
+            <h2 style="margin-top:0; color:#f1c40f;">🎒 인벤토리</h2>
+            <div style="margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+                <button onclick="setSort('newest')" style="cursor:pointer; font-size:11px; padding:4px 8px;">🕐 최신순</button>
+                <button onclick="setSort('grade')" style="cursor:pointer; font-size:11px; padding:4px 8px;">💎 등급순</button>
+                <button onclick="setFilter('all')" style="cursor:pointer; font-size:11px; padding:4px 8px; background:#555; color:white;">전체</button>
+                <button onclick="setFilter('weapon')" style="cursor:pointer; font-size:11px; padding:4px 8px; background:#2980b9; color:white;">⚔️ 무기</button>
+                <button onclick="setFilter('armor')" style="cursor:pointer; font-size:11px; padding:4px 8px; background:#27ae60; color:white;">🛡️ 방어구</button>
+            </div>
+            <div id="inv-list" class="inv-grid"></div>
+            <button onclick="toggleModal('inventory-modal')" style="margin-top:15px; width:100%; padding:10px; background:#c0392b; color:white; border:none; border-radius:5px; cursor:pointer;">닫기</button>
+        </div>
+
+        <div id="shop-modal" class="modal">
+            <h2>🎲 장비 뽑기</h2>
+            <p>1회: <strong>100 Gold</strong></p>
+            <p style="font-size:12px; color:#aaa;">(일반 60%, 희귀 35%, 에픽 5% / <strong>전설 미포함</strong>)</p>
+            <button onclick="gachaDraw()" style="background:#27ae60; color:white; padding:10px 25px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">뽑기 시작!</button>
+            <button onclick="toggleModal('shop-modal')" style="background:#c0392b; color:white; padding:10px 15px; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">닫기</button>
+            <div id="gacha-result" style="margin-top:20px; min-height:80px;"></div>
+        </div>
+
+        <div id="blacksmith-modal" class="modal">
+            <h2 style="color:#f1c40f; margin-top:0;">⚒️ 장비 합성 (강화)</h2>
+            <div class="upgrade-info">같은 부위/등급 아이템 3개를 합성하여<br>상위 등급 아이템을 제작합니다.<br><span style="color:#ff3838; font-weight:bold;">(전설 3개 합성 시 100% '신화' 등급!)</span></div>
+            <div class="upgrade-container">
+                <div id="slot-0" class="upgrade-slot" onclick="removeUpgradeItem(0)"></div>
+                <div id="slot-1" class="upgrade-slot" onclick="removeUpgradeItem(1)"></div>
+                <div id="slot-2" class="upgrade-slot" onclick="removeUpgradeItem(2)"></div>
+            </div>
+            <div id="upgrade-status" style="text-align:center; margin-bottom:10px; font-weight:bold; color:#f1c40f; height:20px;"></div>
+            <button id="upgrade-btn" onclick="attemptUpgrade()" style="width:100%; padding:10px; background:#e67e22; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; margin-bottom:10px;">합성 시도</button>
+            <hr style="border-color:#555;">
+            <div style="font-size:12px; margin-bottom:5px;">▼ 재료 선택 (클릭하여 등록)</div>
+            <div id="upgrade-inv-list" class="inv-grid" style="height:200px;"></div>
+            <button onclick="toggleModal('blacksmith-modal')" style="margin-top:10px; width:100%; padding:8px; background:#c0392b; color:white; border:none; border-radius:5px; cursor:pointer;">닫기</button>
+        </div>
+
+        <div id="world-map-modal" class="modal">
+            <h2 style="color:#3498db;">🗺️ 지역 선택</h2>
+            <div id="map-list"></div>
+            <button onclick="toggleModal('world-map-modal')" style="margin-top:10px; width:100%; padding:10px; background:#c0392b; color:white; border:none; border-radius:5px; cursor:pointer;">취소</button>
+        </div>
+
+        <div id="dialog-box">
+            <h3 id="dialog-name" style="margin:0 0 10px 0; color:#f1c40f;">NPC</h3>
+            <p id="dialog-text" style="margin:0 0 15px 0; line-height:1.5;">내용</p>
+            <div id="dialog-options"></div>
+        </div>
+
+        <div id="player" class="entity">
+            <div class="player-info">
+                <div class="info-name">나 (Lv.<span id="over-lv">1</span>)</div>
+                <div class="info-stats">❤️<span id="over-hp">100</span> 🛡️<span id="over-def">0</span> ⚔️<span id="over-atk">10</span></div>
+                <div id="over-w" class="grade-common">무기: 맨주먹</div>
+                <div id="over-a" class="grade-common">방어구: 평상복</div>
+            </div>
+            나
+        </div>
     </div>
 </div>
 
@@ -332,7 +344,8 @@
         dps: { total: 0, start: 0, max: 0 },
         uiSettings: { 'ui-main': true, 'quest-panel': true, 'minimap': true },
         dpsTimer: null,
-        upgradeSlots: [] // 대장장이 강화 슬롯
+        upgradeSlots: [],
+        autoBattle: false // 자동 전투 상태
     };
 
     const STAGES = {
@@ -364,13 +377,12 @@
         blacksmith: { name: "대장장이 헨리", icon: "⚒️", x: 700, y: 350, type: 'blacksmith' }
     };
 
-    // [수정] 전설->신화 업그레이드 데이터 추가
     const UPGRADE_DATA = {
         'common': { success: 0.8, cost: 200, next: 'rare', color: '#bdc3c7' },
         'rare':   { success: 0.5, cost: 500, next: 'epic', color: '#3498db' },
         'epic':   { success: 0.25, cost: 1500, next: 'legend', color: '#9b59b6' },
-        'legend': { success: 1.0, cost: 5000, next: 'mythic', color: '#f1c40f' }, // 전설 합성 가능
-        'mythic': { success: 0, cost: 0, next: null, color: '#ff3838' } // 신화 (최종)
+        'legend': { success: 1.0, cost: 5000, next: 'mythic', color: '#f1c40f' },
+        'mythic': { success: 0, cost: 0, next: null, color: '#ff3838' }
     };
 
     const GRADE_WEIGHT = { 'mythic': 5, 'legend': 4, 'epic': 3, 'rare': 2, 'common': 1 };
@@ -387,7 +399,6 @@
         robe:  { suffix: " 로브", type: "robe", defMod: 1.0, speedMod: 1.0, coolMod: 0.7 }
     };
 
-    // [수정] 신화 등급 접두사 추가 (압도적 성능)
     const ITEM_PREFIX = [
         { name: "낡은", grade: "common", wBonus: 5, aBonus: 5, color: "grade-common" },
         { name: "강철", grade: "rare", wBonus: 20, aBonus: 20, color: "grade-rare" },
@@ -400,9 +411,81 @@
     function init() {
         setupTown();
         updateUI();
+        resizeGame(); // 화면 크기 조정
         requestAnimationFrame(gameLoop);
         setInterval(ambientEffects, 1000);
         setInterval(updateMinimap, 100);
+    }
+    
+    // [추가] 모바일 화면 잘림 방지: 화면 크기에 맞춰 게임 화면 스케일 조정
+    function resizeGame() {
+        const gameWidth = 950;
+        const gameHeight = 700;
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        // 가로와 세로 중 더 많이 줄여야 하는 비율을 선택 (화면에 꽉 차게)
+        const scale = Math.min(windowWidth / gameWidth, windowHeight / gameHeight);
+        
+        const gameScreen = document.getElementById('game-screen');
+        gameScreen.style.transform = `scale(${scale})`;
+    }
+    
+    // 화면 크기가 변할 때마다 다시 계산
+    window.addEventListener('resize', resizeGame);
+
+    /* === 추가 로직: 자동전투 === */
+
+    function shakeScreen() {
+
+    }
+
+    function toggleAutoBattle() {
+        state.autoBattle = !state.autoBattle;
+        const btn = document.getElementById('auto-btn');
+        btn.innerText = `🤖 자동 전투: ${state.autoBattle ? 'ON' : 'OFF'}`;
+        btn.style.background = state.autoBattle ? '#e74c3c' : '#27ae60';
+        
+        if (state.autoBattle) {
+            showDamage("자동 전투 시작", state.player.x, state.player.y - 50, "#2ecc71");
+        }
+    }
+
+    function doAutoBattle() {
+        // 마을이거나 적이 없으면 작동 안 함
+        if (state.currentStage === 'town' || state.monsters.length === 0) return;
+
+        // 가장 가까운 몬스터 찾기
+        let nearest = null;
+        let minDist = Infinity;
+        state.monsters.forEach(m => {
+            const d = Math.hypot(state.player.x - m.x, state.player.y - m.y);
+            if (d < minDist) { minDist = d; nearest = m; }
+        });
+
+        if (nearest) {
+            const dx = nearest.x - state.player.x;
+            const dy = nearest.y - state.player.y;
+            const dist = Math.hypot(dx, dy);
+
+            // 공격 사거리 계산
+            const wp = state.player.weapon;
+            const range = CONFIG.defaultRange * (wp ? wp.rangeMod : 1.0);
+
+            if (dist > range - 20) { 
+                // 사거리 밖이면 이동
+                const moveSpeed = CONFIG.baseSpeed * (state.player.armor ? state.player.armor.speedMod : 1.0);
+                state.player.x += (dx / dist) * moveSpeed;
+                state.player.y += (dy / dist) * moveSpeed;
+                
+                // 맵 밖으로 안 나가게 보정
+                state.player.x = Math.max(0, Math.min(CONFIG.width-44, state.player.x));
+                state.player.y = Math.max(0, Math.min(CONFIG.height-44, state.player.y));
+            } else { 
+                // 사거리 안이면 공격
+                tryAttack();
+            }
+        }
     }
 
     /* === 마을 설정 === */
@@ -471,7 +554,6 @@
         document.getElementById('game-screen').appendChild(el);
     }
 
-    /* === NPC 상호작용 === */
     function interactNPC(key) {
         const npc = NPC_DATA[key];
         const dBox = document.getElementById('dialog-box');
@@ -584,7 +666,6 @@
         }
     }
 
-    /* === 맵 이동 로직 === */
     function renderWorldMap() {
         const list = document.getElementById('map-list');
         list.innerHTML = '';
@@ -645,7 +726,6 @@
         }
     }
 
-    /* === 전투 시스템 === */
     function createParticles(x, y, color, count) {
         const screen = document.getElementById('game-screen');
         for (let i = 0; i < count; i++) {
@@ -689,11 +769,16 @@
         }
     }
 
+    /* [수정] 전투 로직: 크리티컬 히트 + 화면 흔들림 추가 */
     function tryAttack() {
         if(state.currentStage === 'town' && !isNearDummy()) return;
         
         const now = Date.now();
         const currentCool = CONFIG.baseAtkCool * (state.player.armor ? state.player.armor.coolMod : 1.0);
+        
+        // 데이터가 없어서 lastAtkTime이 undefined일 경우 대비 (안전장치)
+        if (!state.player.lastAtkTime) state.player.lastAtkTime = 0;
+
         if(now - state.player.lastAtkTime < currentCool) return;
         state.player.lastAtkTime = now;
 
@@ -716,8 +801,17 @@
             target.isAngry = true;
             const wBonus = wp ? wp.bonus : 0;
             const dMod = wp ? wp.dmgMod : 1.0;
-            const dmg = Math.floor((state.player.baseAtk + wBonus) * dMod * (0.9 + Math.random() * 0.2));
             
+            // 기본 데미지
+            let dmg = Math.floor((state.player.baseAtk + wBonus) * dMod * (0.9 + Math.random() * 0.2));
+            
+            // [추가] 크리티컬 계산 (확률 5%)
+            const isCrit = Math.random() < 0.05;
+            if (isCrit) {
+                dmg *= 2; // 데미지 2배
+                shakeScreen(); // 화면 흔들림(효과x)
+            }
+
             if(target.isDummy) {
                 const meter = document.getElementById('dps-meter');
                 meter.style.display = 'block';
@@ -736,8 +830,10 @@
                 target.hp -= dmg;
                 if(target.hp <= 0) killMonster(target);
             }
-            showDamage(dmg, target.x, target.y, (wp && wp.grade==='legend' ? "#f1c40f" : (wp && wp.grade==='mythic' ? '#ff3838' : "#fff")));
-            createParticles(target.x+20, target.y+20, (wp ? wp.pColor : '#fff'), 10);
+            // 데미지 텍스트: 크리티컬이면 빨간색 & 큰 글씨
+            showDamage(dmg, target.x, target.y, (isCrit ? "#ff3838" : (wp && wp.grade==='legend' ? "#f1c40f" : (wp && wp.grade==='mythic' ? '#ff3838' : "#fff"))), isCrit);
+            
+            createParticles(target.x+20, target.y+20, (isCrit ? '#ff3838' : (wp ? wp.pColor : '#fff')), 10);
         }
     }
 
@@ -749,6 +845,10 @@
         const aDef = state.player.armor ? Math.floor(state.player.armor.bonus * state.player.armor.defMod) : 0;
         const finalDmg = Math.max(1, m.atk - (state.player.baseDef + aDef));
         state.player.hp -= finalDmg;
+        
+        // [추가] 맞았을 때도 화면 살짝 흔들림
+        shakeScreen();
+        
         showDamage(finalDmg, state.player.x, state.player.y, "#ff7675");
         if(state.player.hp <= 0) {
             alert("사망했습니다! 마을로 복귀합니다.");
@@ -823,7 +923,6 @@
         });
     }
 
-    /* === 가챠 시스템 === */
     function gachaDraw() {
         if(state.player.gold < 100) { 
             alert("골드가 부족합니다!"); 
@@ -879,7 +978,6 @@
         renderInventory();
     }
 
-    /* === 대장장이(강화) 시스템 === */
     function openBlacksmith() {
         state.upgradeSlots = [];
         toggleModal('blacksmith-modal');
@@ -897,7 +995,6 @@
                 slotEl.innerHTML = '⚔️'; 
                 if(item.type === 'armor') slotEl.innerHTML = '🛡️';
                 slotEl.classList.add('filled');
-                // 색상 반영
                 let borderColor = '#bdc3c7';
                 if(item.grade === 'rare') borderColor = '#3498db';
                 else if(item.grade === 'epic') borderColor = '#9b59b6';
@@ -940,8 +1037,6 @@
                 const base = state.upgradeSlots[0];
                 if (item.grade !== base.grade || item.type !== base.type) return false;
             }
-            
-            // [수정] 신화 등급은 더 이상 강화 불가
             if (item.grade === 'mythic') return false;
             return true;
         });
@@ -973,17 +1068,11 @@
 
     function attemptUpgrade() {
         if (state.upgradeSlots.length < 3) return;
-        
         const baseItem = state.upgradeSlots[0];
         const uData = UPGRADE_DATA[baseItem.grade];
-        
-        if (state.player.gold < uData.cost) {
-            alert("골드가 부족합니다!");
-            return;
-        }
-    
+        if (state.player.gold < uData.cost) { alert("골드가 부족합니다!"); return; }
         state.player.gold -= uData.cost;
-        const isSuccess = Math.random() < uData.success; // 전설->신화는 success가 1.0 (100%)
+        const isSuccess = Math.random() < uData.success; 
         
         state.upgradeSlots.forEach(mat => {
             const idx = state.player.inventory.findIndex(i => i.id === mat.id);
@@ -992,10 +1081,8 @@
     
         const modal = document.getElementById('blacksmith-modal');
         const overlayText = document.getElementById('upgrade-overlay-text');
-        
         modal.classList.remove('anim-shake', 'anim-success');
         void modal.offsetWidth;
-    
         const centerX = 475, centerY = 350;
     
         if (isSuccess) {
@@ -1003,8 +1090,7 @@
             if (baseItem.grade === 'common') nextGIdx = 1;
             else if (baseItem.grade === 'rare') nextGIdx = 2;
             else if (baseItem.grade === 'epic') nextGIdx = 3;
-            else if (baseItem.grade === 'legend') nextGIdx = 4; // 신화 등급 인덱스
-    
+            else if (baseItem.grade === 'legend') nextGIdx = 4;
             const prefix = ITEM_PREFIX[nextGIdx];
             let newItem;
             if (baseItem.type === 'weapon') {
@@ -1025,38 +1111,26 @@
                 };
             }
             state.player.inventory.push(newItem);
-            
             modal.classList.add('anim-success');
-            // 신화 등급이면 붉은 파티클, 아니면 노란 파티클
             const pColor = prefix.grade === 'mythic' ? "#ff3838" : "#f1c40f";
             createUIParticles(centerX, centerY, pColor, 60);
-            
             overlayText.innerText = prefix.grade === 'mythic' ? "MYTHIC!!" : "SUCCESS!!";
             overlayText.style.color = pColor;
             overlayText.classList.add('show');
-            
             document.getElementById('upgrade-status').innerText = "강화 성공!";
             document.getElementById('upgrade-status').style.color = "#2ecc71";
-            
         } else {
             const savedItem = state.upgradeSlots[Math.floor(Math.random() * 3)];
             state.player.inventory.push(savedItem);
-    
             modal.classList.add('anim-shake');
             createUIParticles(centerX, centerY, "#7f8c8d", 30);
-            
             overlayText.innerText = "FAILED...";
             overlayText.style.color = "#e74c3c";
             overlayText.classList.add('show');
-    
             document.getElementById('upgrade-status').innerText = "강화 실패 (재료 1개 복구)";
             document.getElementById('upgrade-status').style.color = "#e74c3c";
         }
-    
-        setTimeout(() => {
-            overlayText.classList.remove('show');
-        }, 1200);
-    
+        setTimeout(() => { overlayText.classList.remove('show'); }, 1200);
         state.upgradeSlots = [];
         updateUI();
         renderUpgradeUI();
@@ -1071,34 +1145,19 @@
         renderInventory();
     }
 
-    function setFilter(t) { 
-        state.currentFilter = t; 
-        renderInventory(); 
-    }
-    
-    function setSort(s) { 
-        state.currentSort = s; 
-        renderInventory(); 
-    }
+    function setFilter(t) { state.currentFilter = t; renderInventory(); }
+    function setSort(s) { state.currentSort = s; renderInventory(); }
 
     function renderInventory() {
         const invList = document.getElementById('inv-list');
         invList.innerHTML = '';
         let items = [...state.player.inventory];
-        
-        if (state.currentFilter !== 'all') {
-            items = items.filter(i => i.type === state.currentFilter);
-        }
-        
-        if (state.currentSort === 'newest') {
-            items.sort((a, b) => b.id - a.id);
-        } else if (state.currentSort === 'grade') {
-            items.sort((a, b) => GRADE_WEIGHT[b.grade] - GRADE_WEIGHT[a.grade]);
-        }
+        if (state.currentFilter !== 'all') items = items.filter(i => i.type === state.currentFilter);
+        if (state.currentSort === 'newest') items.sort((a, b) => b.id - a.id);
+        else if (state.currentSort === 'grade') items.sort((a, b) => GRADE_WEIGHT[b.grade] - GRADE_WEIGHT[a.grade]);
 
         items.forEach(item => {
-            const isEq = (state.player.weapon && state.player.weapon.id === item.id) || 
-                         (state.player.armor && state.player.armor.id === item.id);
+            const isEq = (state.player.weapon && state.player.weapon.id === item.id) || (state.player.armor && state.player.armor.id === item.id);
             const el = document.createElement('div');
             el.className = `inv-item ${isEq ? 'equipped' : ''}`;
             el.innerHTML = `<span class="${item.color}">${item.name}</span><br><small>+${item.bonus}</small>`;
@@ -1107,7 +1166,6 @@
         });
     }
 
-    /* === 기본 시스템 === */
     function updateUI() {
         const p = state.player;
         const wBonus = p.weapon ? Math.floor(p.weapon.bonus * p.weapon.dmgMod) : 0;
@@ -1121,7 +1179,6 @@
         document.getElementById('main-spd').innerText = moveSpd.toFixed(1);
         document.getElementById('main-hp-bar').style.width = (p.hp / p.maxHp * 100) + "%";
         document.getElementById('main-exp-bar').style.width = (p.exp / p.maxExp * 100) + "%";
-
         document.getElementById('over-lv').innerText = p.lv;
         document.getElementById('over-hp').innerText = Math.floor(p.hp);
         document.getElementById('over-atk').innerText = p.baseAtk + wBonus;
@@ -1130,7 +1187,6 @@
         const wEl = document.getElementById('over-w');
         wEl.innerText = "무기: " + (p.weapon ? p.weapon.name : "맨주먹");
         wEl.className = p.weapon ? "grade-"+p.weapon.grade : "grade-common";
-
         const aEl = document.getElementById('over-a');
         aEl.innerText = "방어구: " + (p.armor ? p.armor.name : "평상복");
         aEl.className = p.armor ? "grade-"+p.armor.grade : "grade-common";
@@ -1168,7 +1224,7 @@
     function levelUp() {
         state.player.lv++; 
         state.player.exp = 0; 
-        state.player.maxExp = Math.floor(state.player.maxExp * 1.4); 
+        state.player.maxExp = Math.floor(state.player.maxExp * 1.25); 
         state.player.maxHp += 25; 
         state.player.hp = state.player.maxHp; 
         state.player.baseAtk += 4;
@@ -1232,8 +1288,14 @@
     function gameLoop() {
         const anyModalOpen = Array.from(document.querySelectorAll('.modal')).some(m => m.style.display === 'block');
         const isDialog = document.getElementById('dialog-box').style.display === 'block';
+        
         if(!anyModalOpen && !isDialog) { 
-            movePlayer(); 
+            // [추가] 자동 전투 로직
+            if (state.autoBattle) {
+                doAutoBattle();
+            } else {
+                movePlayer();
+            }
             moveMonsters(); 
         }
         render(); 
@@ -1261,10 +1323,11 @@
         });
     }
 
-    function showDamage(t, x, y, c) { 
+    // [수정] showDamage에 isCrit 인자 추가 (크리티컬 시 글자 크기/색상 변경)
+    function showDamage(t, x, y, c, isCrit=false) { 
         const el = document.createElement('div'); 
-        el.className = 'dmg-text'; 
-        el.innerText = t; 
+        el.className = `dmg-text ${isCrit ? 'dmg-crit' : ''}`; 
+        el.innerText = isCrit ? `💥${t}` : t; // 크리티컬 시 이모지 추가
         el.style.color = c; 
         el.style.left = x+'px'; 
         el.style.top = y+'px'; 
@@ -1302,6 +1365,7 @@
         showDamage("시스템: 파일 저장 완료!", 400, 300, "#f1c40f");
     }
 
+    // [수정] 세이브 파일 로드 시 안전하게 병합 (Safe Merging)
     function importSaveFile(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -1311,8 +1375,26 @@
             try {
                 const data = JSON.parse(e.target.result);
                 
-                state.player = data.player;
-                state.currentStage = data.currentStage || 'town';
+                // 기존 데이터 통째로 교체 방지 (Object.assign 사용)
+                // 현재 state.player의 구조를 유지하면서 저장된 값만 덮어씀
+                if (data.player) {
+                    Object.assign(state.player, data.player);
+                    
+                    // 만약 옛날 세이브 파일이라 필수 변수가 없다면 강제 초기화
+                    if (state.player.lastAtkTime === undefined) state.player.lastAtkTime = 0;
+                    // 인벤토리 등 참조 타입도 제대로 들어왔는지 확인 (JSON 파싱으로 이미 객체화됨)
+                }
+
+                if (data.currentStage) state.currentStage = data.currentStage;
+                else state.currentStage = 'town';
+
+                // 자동전투 상태 등 일시적 상태는 초기화
+                state.autoBattle = false;
+                const autoBtn = document.getElementById('auto-btn');
+                if(autoBtn) {
+                    autoBtn.innerText = '🤖 자동 전투: OFF';
+                    autoBtn.style.background = '#27ae60';
+                }
                 
                 updateUI();
                 renderInventory();
@@ -1343,13 +1425,12 @@
     });
     window.addEventListener('keyup', e => state.keys[e.key.toLowerCase()] = false);
 
-    /* === 모바일 컨트롤러 로직 추가 === */
+    /* === 모바일 컨트롤러 로직 === */
     const joystickBase = document.getElementById('joystick-base');
     const joystickStick = document.getElementById('joystick-stick');
     const mobileAtkBtn = document.getElementById('mobile-atk-btn');
     let joyTouchId = null;
 
-    // 모바일 감지 (간단한 체크)
     if(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0)) {
         document.getElementById('mobile-controls').style.display = 'block';
     }
@@ -1388,7 +1469,7 @@
         
         const dx = touch.clientX - centerX;
         const dy = touch.clientY - centerY;
-        const dist = Math.min(Math.hypot(dx, dy), 35); // Max radius
+        const dist = Math.min(Math.hypot(dx, dy), 35); 
         const angle = Math.atan2(dy, dx);
         
         const moveX = Math.cos(angle) * dist;
@@ -1396,7 +1477,6 @@
         
         joystickStick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
         
-        // 각도에 따라 키 상태 업데이트 (8방향 지원)
         const deg = angle * (180 / Math.PI);
         state.keys['w'] = (deg > -150 && deg < -30);
         state.keys['s'] = (deg > 30 && deg < 150);
