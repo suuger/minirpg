@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chronicles Online - Reforged (Final Mobile)</title>
+    <title>Chronicles Online - Reforged (Final Mobile + Boss + Dynamic)</title>
     <style>
         /* 모바일 화면 맞춤 및 스크롤 방지 */
         body { 
@@ -23,11 +23,20 @@
             position: relative;
             width: 950px;
             height: 700px;
-            /* 화면 스케일링을 위한 컨테이너 */
             display: flex;
             justify-content: center;
             align-items: center;
         }
+
+        @keyframes container-shake {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-8px, 8px) rotate(-2deg); }
+            40% { transform: translate(8px, -8px) rotate(2deg); }
+            60% { transform: translate(-8px, -8px) rotate(-2deg); }
+            80% { transform: translate(8px, 8px) rotate(2deg); }
+            100% { transform: translate(0, 0); }
+        }
+        .anim-shake-screen { animation: container-shake 0.4s ease-in-out; }
 
         #game-screen { 
             position: absolute; 
@@ -39,7 +48,6 @@
             box-shadow: 0 0 40px rgba(0,0,0,0.8); 
             overflow: hidden;
             transition: background-color 0.8s, border-color 0.8s, background-image 0.8s;
-            /* 스케일링 기준점 중앙 설정 */
             transform-origin: center center;
         }
         
@@ -48,13 +56,9 @@
         .bar-bg { width: 120px; height: 10px; background: #444; border-radius: 5px; overflow: hidden; border: 1px solid #666; }
         .bar-fill { height: 100%; transition: width 0.3s; }
 
-        /* 퀘스트 패널 */
         #quest-panel { position: absolute; top: 180px; left: 15px; width: 220px; background: rgba(0,0,0,0.75); padding: 10px; border-radius: 5px; border-left: 3px solid #f1c40f; display: none; pointer-events: none; z-index: 90; }
-        
-        /* DPS 미터기 */
         #dps-meter { position: absolute; top: 15px; right: 150px; width: 140px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; text-align: right; display: none; pointer-events: none; z-index: 95; }
 
-        /* 미니맵 */
         #minimap { position: absolute; bottom: 15px; right: 15px; width: 150px; height: 150px; background: rgba(0,0,0,0.8); border: 2px solid #555; border-radius: 5px; z-index: 100; opacity: 0.8; }
         .mm-dot { position: absolute; width: 4px; height: 4px; border-radius: 50%; transform: translate(-50%, -50%); }
 
@@ -104,7 +108,6 @@
         .inv-item { background: #34495e; border: 2px solid #7f8c8d; border-radius: 5px; padding: 10px; text-align: center; cursor: pointer; font-size: 11px; position: relative; }
         .inv-item:hover { border-color: #f1c40f; }
         .inv-item.equipped::after { content: "E"; position: absolute; top: 2px; right: 2px; background: #27ae60; color: white; padding: 2px 4px; border-radius: 3px; font-weight: bold; font-size: 9px; }
-        .inv-item.selected-mat { border: 2px solid #e74c3c; background: #4a2c2c; }
 
         .btn-group { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
         .ui-btn { background: #d35400; color: white; padding: 10px 15px; font-weight: bold; cursor: pointer; border-radius: 8px; border: none; transition: background 0.2s; }
@@ -153,7 +156,6 @@
         .dialog-btn { background: #3498db; color: white; border: none; padding: 8px 15px; margin-top: 10px; cursor: pointer; border-radius: 4px; margin-right: 5px; }
         .dialog-btn:hover { background: #2980b9; }
 
-        /* 데미지 텍스트: 크리티컬 효과 추가 */
         .dmg-text { position: absolute; font-weight: 900; font-size: 22px; text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 50; animation: flyUp 0.6s forwards; }
         .dmg-crit { font-size: 36px !important; color: #ff3838 !important; text-shadow: 2px 2px 0 #fff, 0 0 10px #ff0000 !important; z-index: 60; }
         @keyframes flyUp { to { transform: translateY(-50px); opacity: 0; } }
@@ -167,7 +169,6 @@
 
         #map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; opacity: 0; pointer-events: none; z-index: 999; transition: opacity 0.4s; }
 
-        /* === MOBILE CONTROLS === */
         #mobile-controls { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
         .joystick-area { position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border-radius: 50%; pointer-events: auto; border: 2px solid rgba(255, 255, 255, 0.2); touch-action: none; }
         .joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
@@ -225,34 +226,23 @@
 
         <div id="settings-modal" class="modal">
             <h2 style="color:#f1c40f; margin-top:0;">⚙️ UI 설정</h2>
-            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
                 <span>메인 메뉴 표시</span>
                 <input type="checkbox" checked onchange="toggleUI('ui-main', this.checked)">
             </div>
-            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
                 <span>퀘스트창 표시</span>
                 <input type="checkbox" checked onchange="toggleUI('quest-panel', this.checked)">
             </div>
-            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; width:250px;">
                 <span>미니맵 표시</span>
                 <input type="checkbox" checked onchange="toggleUI('minimap', this.checked)">
             </div>
-
             <hr style="border:0; border-top:1px solid #555; margin:15px 0;">
             <h3 style="font-size:14px; color:#3498db; margin-bottom:10px;">💾 데이터 관리</h3>
-            
-            <button class="ui-btn" style="width:100%; background:#27ae60; margin-bottom:8px;" onclick="exportSaveFile()">
-                현재 상태 파일로 저장
-            </button>
-            
-            <label for="save-upload" class="ui-btn" style="display:block; text-align:center; background:#2980b9; margin-bottom:10px; cursor:pointer;">
-                세이브 파일 불러오기
-            </label>
+            <button class="ui-btn" style="width:100%; background:#27ae60; margin-bottom:8px;" onclick="exportSaveFile()">현재 상태 파일로 저장</button>
+            <label for="save-upload" class="ui-btn" style="display:block; text-align:center; background:#2980b9; margin-bottom:10px; cursor:pointer;">세이브 파일 불러오기</label>
             <input type="file" id="save-upload" style="display:none;" onchange="importSaveFile(event)">
-
             <button class="ui-btn" style="width:100%; margin-top:10px;" onclick="toggleModal('settings-modal')">닫기</button>
         </div>
 
@@ -328,9 +318,7 @@
         },
         monsters: [], npcs: [], objects: [],
         keys: {},
-        currentFilter: 'all',
-        currentSort: 'newest',
-        currentStage: 'town',
+        currentFilter: 'all', currentSort: 'newest', currentStage: 'town',
         quest: null,
         questList: [
             { id: 'q1', title: '슬라임 소탕', target: 'slime', count: 0, max: 5, rewardGold: 300, rewardExp: 150, minLv: 1, desc: "마을 앞 들판의 슬라임 5마리를 처치하세요." },
@@ -338,14 +326,25 @@
             { id: 'q3', title: '악마 토벌', target: 'demon', count: 0, max: 1, rewardGold: 1500, rewardExp: 500, minLv: 10, desc: "화산의 악마를 처치하세요." },
             { id: 'q4', title: '설원 조사', target: 'ice_slime', count: 0, max: 10, rewardGold: 5000, rewardExp: 2000, minLv: 15, desc: "설원의 아이스 슬라임 10마리를 처치하세요." },
             { id: 'q5', title: '늪지대의 왕', target: 'hydra', count: 0, max: 5, rewardGold: 15000, rewardExp: 6000, minLv: 20, desc: "늪지대의 히드라 5마리를 처치하세요." },
-            { id: 'q6', title: '용 사냥꾼', target: 'dragon', count: 0, max: 1, rewardGold: 100000, rewardExp: 50000, minLv: 30, desc: "성 최상층의 드래곤을 처치하세요." }
+            { id: 'q6', title: '용 사냥꾼', target: 'dragon', count: 0, max: 1, rewardGold: 100000, rewardExp: 50000, minLv: 30, desc: "성 최상층의 드래곤을 처치하세요." },
+            // [추가] 마지막 퀘스트
+            { id: 'q7', title: '심연의 지배자', target: 'chronos', count: 0, max: 1, rewardGold: 500000, rewardExp: 200000, minLv: 35, desc: "심연의 제단에서 크로노스를 처치하세요." }
         ],
         currentQuestIdx: 0,
         dps: { total: 0, start: 0, max: 0 },
         uiSettings: { 'ui-main': true, 'quest-panel': true, 'minimap': true },
-        dpsTimer: null,
-        upgradeSlots: [],
-        autoBattle: false // 자동 전투 상태
+        dpsTimer: null, upgradeSlots: [], autoBattle: false
+    };
+
+    // [수정] 보스 상태 객체 전면 개편
+    const bossFight = {
+        active: false,
+        x: 475, baseY: 350, y: 350, radius: 60, color: '#4a0e4e',
+        name: '심연의 지배자 크로노스',
+        hp: 150000, maxHp: 150000,
+        phase: 1, timer: 0, invincible: false,
+        orbs: [], bouncingOrbs: [], lasers: [], safeZone: null,
+        dragonTimer: 0
     };
 
     const STAGES = {
@@ -355,7 +354,8 @@
         volcano: { name: "불타는 화산", minLv: 10, bgColor: "#4b1300", borderColor: "#c0392b", bgPattern: 'grid', mobs: ['orc', 'demon'], rewardMult: 2.5 },
         frozen: { name: "얼어붙은 설원", minLv: 15, bgColor: "#dff9fb", borderColor: "#7ed6df", bgPattern: 'grid', mobs: ['ice_slime', 'yeti'], rewardMult: 3.5 },
         swamp: { name: "독기 어린 늪지대", minLv: 20, bgColor: "#2d3436", borderColor: "#55efc4", bgPattern: 'grid', mobs: ['mud_golem', 'hydra'], rewardMult: 5.0 },
-        castle: { name: "멸망한 국왕의 성", minLv: 30, bgColor: "#2d3436", borderColor: "#d63031", bgPattern: 'grid', mobs: ['dark_knight', 'dragon'], rewardMult: 10.0 }
+        castle: { name: "멸망한 국왕의 성", minLv: 30, bgColor: "#2d3436", borderColor: "#d63031", bgPattern: 'grid', mobs: ['dark_knight', 'dragon'], rewardMult: 10.0 },
+        boss_altar: { name: "심연의 제단 (Boss)", minLv: 35, bgColor: "#1a0b2e", borderColor: "#8e44ad", bgPattern: 'grid', mobs: [], rewardMult: 0 }
     };
 
     const MOB_DATA = {
@@ -411,33 +411,24 @@
     function init() {
         setupTown();
         updateUI();
-        resizeGame(); // 화면 크기 조정
+        resizeGame(); 
         requestAnimationFrame(gameLoop);
         setInterval(ambientEffects, 1000);
         setInterval(updateMinimap, 100);
     }
     
-    // [추가] 모바일 화면 잘림 방지: 화면 크기에 맞춰 게임 화면 스케일 조정
     function resizeGame() {
-        const gameWidth = 950;
-        const gameHeight = 700;
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-        
-        // 가로와 세로 중 더 많이 줄여야 하는 비율을 선택 (화면에 꽉 차게)
-        const scale = Math.min(windowWidth / gameWidth, windowHeight / gameHeight);
-        
-        const gameScreen = document.getElementById('game-screen');
-        gameScreen.style.transform = `scale(${scale})`;
+        const scale = Math.min(window.innerWidth / CONFIG.width, window.innerHeight / CONFIG.height);
+        document.getElementById('game-screen').style.transform = `scale(${scale})`;
     }
-    
-    // 화면 크기가 변할 때마다 다시 계산
     window.addEventListener('resize', resizeGame);
 
-    /* === 추가 로직: 자동전투 === */
-
     function shakeScreen() {
-
+        const container = document.getElementById('game-container');
+        container.classList.remove('anim-shake-screen');
+        void container.offsetWidth; 
+        container.classList.add('anim-shake-screen');
+        setTimeout(() => container.classList.remove('anim-shake-screen'), 400);
     }
 
     function toggleAutoBattle() {
@@ -445,54 +436,56 @@
         const btn = document.getElementById('auto-btn');
         btn.innerText = `🤖 자동 전투: ${state.autoBattle ? 'ON' : 'OFF'}`;
         btn.style.background = state.autoBattle ? '#e74c3c' : '#27ae60';
-        
-        if (state.autoBattle) {
-            showDamage("자동 전투 시작", state.player.x, state.player.y - 50, "#2ecc71");
-        }
+        if (state.autoBattle) showDamage("자동 전투 시작", state.player.x, state.player.y - 50, "#2ecc71");
     }
 
     function doAutoBattle() {
-        // 마을이거나 적이 없으면 작동 안 함
-        if (state.currentStage === 'town' || state.monsters.length === 0) return;
+        if (state.currentStage === 'town') return;
 
-        // 가장 가까운 몬스터 찾기
         let nearest = null;
         let minDist = Infinity;
-        state.monsters.forEach(m => {
-            const d = Math.hypot(state.player.x - m.x, state.player.y - m.y);
-            if (d < minDist) { minDist = d; nearest = m; }
-        });
+
+        if (bossFight.active) {
+            minDist = Math.hypot(state.player.x - bossFight.x, state.player.y - bossFight.y);
+            nearest = { x: bossFight.x, y: bossFight.y, isBoss: true };
+        } else {
+            if (state.monsters.length === 0) return;
+            state.monsters.forEach(m => {
+                const d = Math.hypot(state.player.x - m.x, state.player.y - m.y);
+                if (d < minDist) { minDist = d; nearest = m; }
+            });
+        }
 
         if (nearest) {
             const dx = nearest.x - state.player.x;
             const dy = nearest.y - state.player.y;
-            const dist = Math.hypot(dx, dy);
-
-            // 공격 사거리 계산
+            
             const wp = state.player.weapon;
             const range = CONFIG.defaultRange * (wp ? wp.rangeMod : 1.0);
+            const targetRadius = nearest.isBoss ? bossFight.radius : 20;
 
-            if (dist > range - 20) { 
-                // 사거리 밖이면 이동
+            if (minDist > range + targetRadius - 20) { 
                 const moveSpeed = CONFIG.baseSpeed * (state.player.armor ? state.player.armor.speedMod : 1.0);
-                state.player.x += (dx / dist) * moveSpeed;
-                state.player.y += (dy / dist) * moveSpeed;
-                
-                // 맵 밖으로 안 나가게 보정
+                state.player.x += (dx / minDist) * moveSpeed;
+                state.player.y += (dy / minDist) * moveSpeed;
                 state.player.x = Math.max(0, Math.min(CONFIG.width-44, state.player.x));
                 state.player.y = Math.max(0, Math.min(CONFIG.height-44, state.player.y));
             } else { 
-                // 사거리 안이면 공격
                 tryAttack();
             }
         }
     }
 
-    /* === 마을 설정 === */
+    // 사망 공통 처리 함수
+    function handlePlayerDeath() {
+        alert("사망했습니다! 마을로 복귀합니다.");
+        state.player.hp = state.player.maxHp;
+        changeStage('town');
+    }
+
     function setupTown() {
         state.currentStage = 'town';
         const stage = STAGES['town'];
-        
         clearEntities();
         applyStageVisuals(stage);
         document.getElementById('current-map-name').innerText = stage.name;
@@ -507,13 +500,8 @@
         spawnObject('house', 50, 550, 150, 100, "🔮 마법상점");
         spawnObject('house', 750, 550, 150, 100, "🛡️ 길드");
 
-        spawnNPC('elder');
-        spawnNPC('merchant');
-        spawnNPC('blacksmith');
-
-        spawnDummy(850, 350);
-        spawnDummy(850, 420);
-        spawnDummy(850, 280);
+        spawnNPC('elder'); spawnNPC('merchant'); spawnNPC('blacksmith');
+        spawnDummy(850, 350); spawnDummy(850, 420); spawnDummy(850, 280);
 
         state.player.x = 475; state.player.y = 450;
         updateQuestUI();
@@ -548,7 +536,6 @@
         
         let mark = '';
         if(data.type === 'quest_giver') mark = `<div id="mark-${key}" class="npc-mark" style="color:#f1c40f;">!</div>`;
-        
         el.innerHTML = `${mark}<div style="position:absolute; bottom:-20px; width:100px; text-align:center; font-size:11px; left:-28px;">${data.name}</div>${data.icon}`;
         el.onclick = () => interactNPC(key);
         document.getElementById('game-screen').appendChild(el);
@@ -557,57 +544,43 @@
     function interactNPC(key) {
         const npc = NPC_DATA[key];
         const dBox = document.getElementById('dialog-box');
-        const dName = document.getElementById('dialog-name');
-        const dText = document.getElementById('dialog-text');
         const dOpts = document.getElementById('dialog-options');
-
         dBox.style.display = 'block';
-        dName.innerText = npc.name;
+        document.getElementById('dialog-name').innerText = npc.name;
         dOpts.innerHTML = '';
 
         if (npc.type === 'shop') {
-            dText.innerText = "좋은 물건이 많이 들어왔습니다. (희귀, 에픽 확률 UP!)";
+            document.getElementById('dialog-text').innerText = "좋은 물건이 많이 들어왔습니다. (희귀, 에픽 확률 UP!)";
             addBtn("상점 열기", () => { dBox.style.display='none'; toggleModal('shop-modal'); });
             addBtn("다음에", () => dBox.style.display='none');
-        }
-        else if (npc.type === 'blacksmith') {
-            dText.innerText = "같은 부위, 같은 등급 장비 3개를 가져오면 다음등급으로 강화해주지";
+        } else if (npc.type === 'blacksmith') {
+            document.getElementById('dialog-text').innerText = "같은 부위, 같은 등급 장비 3개를 가져오면 다음등급으로 강화해주지";
             addBtn("강화하기", () => { dBox.style.display='none'; openBlacksmith(); });
             addBtn("떠나기", () => dBox.style.display='none');
-        }
-        else if (npc.type === 'quest_giver') {
+        } else if (npc.type === 'quest_giver') {
             const qData = state.questList[state.currentQuestIdx];
-            
             if (state.currentQuestIdx >= state.questList.length) {
-                dText.innerText = "자네는 이제 진정한 영웅일세. 더 이상 줄 임무가 없구만.";
+                document.getElementById('dialog-text').innerText = "자네는 이제 진정한 영웅일세. 더 이상 줄 임무가 없구만.";
                 addBtn("감사합니다", () => dBox.style.display='none');
-            }
-            else if (!state.quest) {
+            } else if (!state.quest) {
                 if (state.player.lv < qData.minLv) {
-                    dText.innerText = `이 임무는 위험하네. 레벨 ${qData.minLv}을 달성하고 오게나.`;
+                    document.getElementById('dialog-text').innerText = `이 임무는 위험하네. 레벨 ${qData.minLv}을 달성하고 오게나.`;
                     addBtn("알겠습니다", () => dBox.style.display='none');
                 } else {
-                    dText.innerText = `${qData.title}\n${qData.desc}\n(보상: ${qData.rewardGold}G, ${qData.rewardExp} EXP)`;
+                    document.getElementById('dialog-text').innerText = `${qData.title}\n${qData.desc}\n(보상: ${qData.rewardGold}G, ${qData.rewardExp} EXP)`;
                     addBtn("수락하기", () => { acceptQuest(qData); dBox.style.display='none'; });
                     addBtn("거절하기", () => dBox.style.display='none');
                 }
-            } 
-            else if (state.quest.completed) {
-                dText.innerText = "훌륭하네! 여기 약속했지만 보상일세.";
+            } else if (state.quest.completed) {
+                document.getElementById('dialog-text').innerText = "훌륭하네! 여기 약속한 보상일세.";
                 addBtn("보상 받기", () => { completeQuest(); dBox.style.display='none'; });
-            } 
-            else {
-                dText.innerText = `아직 처치가 부족하네. (${state.quest.count}/${state.quest.max})`;
+            } else {
+                document.getElementById('dialog-text').innerText = `아직 처치가 부족하네. (${state.quest.count}/${state.quest.max})`;
                 addBtn("계속하겠습니다", () => dBox.style.display='none');
             }
         }
-        
         function addBtn(txt, cb) {
-            const btn = document.createElement('button'); 
-            btn.className = 'dialog-btn'; 
-            btn.innerText = txt; 
-            btn.onclick = cb; 
-            dOpts.appendChild(btn);
+            const btn = document.createElement('button'); btn.className = 'dialog-btn'; btn.innerText = txt; btn.onclick = cb; dOpts.appendChild(btn);
         }
     }
 
@@ -622,47 +595,27 @@
         state.player.gold += state.quest.rewardGold;
         state.player.exp += state.quest.rewardExp;
         showDamage(`보상: ${state.quest.rewardGold}G`, state.player.x, state.player.y - 50, "#f1c40f");
-        
         if(state.player.exp >= state.player.maxExp) levelUp();
-        
-        state.quest = null;
-        state.currentQuestIdx++;
-        updateQuestUI();
-        updateUI();
-        
+        state.quest = null; state.currentQuestIdx++;
+        updateQuestUI(); updateUI();
         if(state.currentQuestIdx < state.questList.length) {
             setTimeout(() => { 
                 const mark = document.getElementById('mark-elder');
-                if(mark) { 
-                    mark.innerText = '!'; 
-                    mark.style.color = '#f1c40f'; 
-                    mark.style.display = 'block'; 
-                }
+                if(mark) { mark.innerText = '!'; mark.style.color = '#f1c40f'; mark.style.display = 'block'; }
             }, 2000);
         }
     }
 
     function updateQuestUI() {
         const panel = document.getElementById('quest-panel');
-        if (!state.quest || !state.uiSettings['quest-panel']) {
-            panel.style.display = 'none';
-            return;
-        }
+        if (!state.quest || !state.uiSettings['quest-panel']) { panel.style.display = 'none'; return; }
         panel.style.display = 'block';
         document.getElementById('quest-title').innerText = state.quest.title;
-        const status = state.quest.completed ? "(완료!)" : "";
-        document.getElementById('quest-prog').innerText = `${state.quest.count} / ${state.quest.max} ${status}`;
-        
+        document.getElementById('quest-prog').innerText = `${state.quest.count} / ${state.quest.max} ${state.quest.completed ? "(완료!)" : ""}`;
         const mark = document.getElementById('mark-elder');
         if(mark) {
-            if(state.quest.completed) { 
-                mark.innerText = '?'; 
-                mark.style.color = '#2ecc71'; 
-                mark.style.display = 'block'; 
-            }
-            else { 
-                mark.style.display = 'none'; 
-            }
+            if(state.quest.completed) { mark.innerText = '?'; mark.style.color = '#2ecc71'; mark.style.display = 'block'; }
+            else { mark.style.display = 'none'; }
         }
     }
 
@@ -675,10 +628,7 @@
             const isCurrent = state.currentStage === key;
             const btn = document.createElement('div');
             btn.className = `map-select-btn ${isLocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}`;
-            btn.innerHTML = `
-                <span>${stage.name} ${isCurrent ? ' (현재)' : ''}</span>
-                <span style="font-size:11px;">${isLocked ? `Lv.${stage.minLv} 필요` : '입장 가능'}</span>
-            `;
+            btn.innerHTML = `<span>${stage.name} ${isCurrent ? ' (현재)' : ''}</span><span style="font-size:11px;">${isLocked ? `Lv.${stage.minLv} 필요` : '입장 가능'}</span>`;
             if(!isLocked) btn.onclick = () => changeStage(key);
             list.appendChild(btn);
         });
@@ -686,7 +636,6 @@
 
     function changeStage(stageId) {
         if(state.currentStage === stageId) return;
-        
         const overlay = document.getElementById('map-overlay');
         overlay.style.opacity = '1';
         toggleModal('world-map-modal');
@@ -694,19 +643,28 @@
         setTimeout(() => {
             state.currentStage = stageId;
             const stage = STAGES[stageId];
-            
             clearEntities();
             applyStageVisuals(stage);
             document.getElementById('current-map-name').innerText = stage.name;
 
-            if(stageId === 'town') {
-                setupTown();
+            // 보스맵 진입 초기화
+            if (stageId === 'boss_altar') {
+                bossFight.active = true;
+                bossFight.hp = bossFight.maxHp;
+                bossFight.phase = 1; bossFight.timer = 0;
+                bossFight.invincible = false; bossFight.dragonTimer = 0;
+                bossFight.orbs = []; bossFight.bouncingOrbs = []; bossFight.lasers = [];
+                bossFight.safeZone = null;
+                state.player.x = 475; state.player.y = 550;
             } else {
-                state.player.x = 100; 
-                state.player.y = 350;
-                for(let i=0; i<4; i++) spawnMonster();
+                bossFight.active = false;
+                if(stageId === 'town') {
+                    setupTown();
+                } else {
+                    state.player.x = 100; state.player.y = 350;
+                    for(let i=0; i<4; i++) spawnMonster();
+                }
             }
-
             overlay.style.opacity = '0';
             showDamage(stage.name + " 도착!", 450, 300, "#55efc4");
             updateUI();
@@ -717,7 +675,6 @@
         const screen = document.getElementById('game-screen');
         screen.style.backgroundColor = stage.bgColor;
         screen.style.borderColor = stage.borderColor;
-        
         if(stage.bgPattern === 'grid') {
             screen.style.backgroundImage = 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)';
             screen.style.backgroundSize = '40px 40px';
@@ -731,54 +688,34 @@
         for (let i = 0; i < count; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
-            p.style.width = (Math.random()*8+4)+'px'; 
-            p.style.height = p.style.width;
-            p.style.background = color; 
-            p.style.left = x+'px'; 
-            p.style.top = y+'px';
+            p.style.width = (Math.random()*8+4)+'px'; p.style.height = p.style.width;
+            p.style.background = color; p.style.left = x+'px'; p.style.top = y+'px';
             let tx = (Math.random()-0.5)*120, ty = (Math.random()-0.5)*120;
-            p.style.setProperty('--tx', `${tx}px`); 
-            p.style.setProperty('--ty', `${ty}px`);
+            p.style.setProperty('--tx', `${tx}px`); p.style.setProperty('--ty', `${ty}px`);
             p.style.animation = `particle-fade 0.5s forwards`;
-            screen.appendChild(p); 
-            setTimeout(() => p.remove(), 500);
+            screen.appendChild(p); setTimeout(() => p.remove(), 500);
         }
     }
 
     function createUIParticles(x, y, color, count) {
         const screen = document.getElementById('game-screen');
         for (let i = 0; i < count; i++) {
-            const p = document.createElement('div');
-            p.className = 'ui-particle';
-            p.style.width = (Math.random()*10+5)+'px';
-            p.style.height = p.style.width;
-            p.style.background = color;
-            p.style.left = x + 'px';
-            p.style.top = y + 'px';
-        
+            const p = document.createElement('div'); p.className = 'ui-particle';
+            p.style.width = (Math.random()*10+5)+'px'; p.style.height = p.style.width;
+            p.style.background = color; p.style.left = x + 'px'; p.style.top = y + 'px';
             const angle = Math.random() * Math.PI * 2;
             const velocity = Math.random() * 150 + 50;
-            const tx = Math.cos(angle) * velocity;
-            const ty = Math.sin(angle) * velocity;
-        
-            p.style.setProperty('--tx', `${tx}px`);
-            p.style.setProperty('--ty', `${ty}px`);
-        
-            screen.appendChild(p);
-            setTimeout(() => p.remove(), 800);
+            p.style.setProperty('--tx', `${Math.cos(angle) * velocity}px`);
+            p.style.setProperty('--ty', `${Math.sin(angle) * velocity}px`);
+            screen.appendChild(p); setTimeout(() => p.remove(), 800);
         }
     }
 
-    /* [수정] 전투 로직: 크리티컬 히트 + 화면 흔들림 추가 */
     function tryAttack() {
         if(state.currentStage === 'town' && !isNearDummy()) return;
-        
         const now = Date.now();
         const currentCool = CONFIG.baseAtkCool * (state.player.armor ? state.player.armor.coolMod : 1.0);
-        
-        // 데이터가 없어서 lastAtkTime이 undefined일 경우 대비 (안전장치)
         if (!state.player.lastAtkTime) state.player.lastAtkTime = 0;
-
         if(now - state.player.lastAtkTime < currentCool) return;
         state.player.lastAtkTime = now;
 
@@ -792,69 +729,63 @@
         pEl.classList.add(`atk-${wType}`);
 
         let target = null, minDist = range;
-        state.monsters.forEach(m => {
-            const dist = Math.hypot(state.player.x - m.x, state.player.y - m.y);
-            if(dist < minDist) { minDist = dist; target = m; }
-        });
-
-        if(target) {
-            target.isAngry = true;
-            const wBonus = wp ? wp.bonus : 0;
-            const dMod = wp ? wp.dmgMod : 1.0;
-            
-            // 기본 데미지
-            let dmg = Math.floor((state.player.baseAtk + wBonus) * dMod * (0.9 + Math.random() * 0.2));
-            
-            // [추가] 크리티컬 계산 (확률 5%)
-            const isCrit = Math.random() < 0.05;
-            if (isCrit) {
-                dmg *= 2; // 데미지 2배
-                shakeScreen(); // 화면 흔들림(효과x)
+        let bossTarget = null;
+        if (bossFight.active) {
+            const distToBoss = Math.hypot(state.player.x - bossFight.x, state.player.y - bossFight.y);
+            if (distToBoss < range + bossFight.radius) {
+                minDist = distToBoss;
+                bossTarget = bossFight;
             }
+        }
 
+        if (!bossTarget) {
+            state.monsters.forEach(m => {
+                const dist = Math.hypot(state.player.x - m.x, state.player.y - m.y);
+                if(dist < minDist) { minDist = dist; target = m; }
+            });
+        }
+
+        const wBonus = wp ? wp.bonus : 0;
+        const dMod = wp ? wp.dmgMod : 1.0;
+        let dmg = Math.floor((state.player.baseAtk + wBonus) * dMod * (0.9 + Math.random() * 0.2));
+        const isCrit = Math.random() < 0.05;
+        if (isCrit) { dmg *= 2; shakeScreen(); }
+
+        if (bossTarget) {
+            if (bossFight.invincible) {
+                showDamage("무적!", bossFight.x, bossFight.y, "#888888");
+            } else {
+                bossFight.hp -= dmg;
+                showDamage(dmg, bossFight.x, bossFight.y, (isCrit ? "#ff3838" : "#ff00ff"), isCrit);
+                createParticles(bossFight.x, bossFight.y, (isCrit ? '#ff3838' : '#ff00ff'), 10);
+            }
+        } else if(target) {
+            target.isAngry = true;
             if(target.isDummy) {
-                const meter = document.getElementById('dps-meter');
-                meter.style.display = 'block';
-
-                state.dps.total += dmg;
-                state.dps.max = Math.max(state.dps.max, dmg);
+                const meter = document.getElementById('dps-meter'); meter.style.display = 'block';
+                state.dps.total += dmg; state.dps.max = Math.max(state.dps.max, dmg);
                 document.getElementById('dps-val').innerText = state.dps.total;
                 document.getElementById('max-dmg').innerText = state.dps.max;
-
                 if(state.dpsTimer) clearTimeout(state.dpsTimer);
-                state.dpsTimer = setTimeout(() => {
-                    meter.style.display = 'none';
-                    state.dps.total = 0; 
-                }, 7000);
+                state.dpsTimer = setTimeout(() => { meter.style.display = 'none'; state.dps.total = 0; }, 7000);
             } else {
                 target.hp -= dmg;
                 if(target.hp <= 0) killMonster(target);
             }
-            // 데미지 텍스트: 크리티컬이면 빨간색 & 큰 글씨
             showDamage(dmg, target.x, target.y, (isCrit ? "#ff3838" : (wp && wp.grade==='legend' ? "#f1c40f" : (wp && wp.grade==='mythic' ? '#ff3838' : "#fff"))), isCrit);
-            
             createParticles(target.x+20, target.y+20, (isCrit ? '#ff3838' : (wp ? wp.pColor : '#fff')), 10);
         }
     }
 
-    function isNearDummy() {
-        return state.monsters.some(m => m.isDummy && Math.hypot(state.player.x - m.x, state.player.y - m.y) < 150);
-    }
+    function isNearDummy() { return state.monsters.some(m => m.isDummy && Math.hypot(state.player.x - m.x, state.player.y - m.y) < 150); }
 
     function monsterAttack(m) {
         const aDef = state.player.armor ? Math.floor(state.player.armor.bonus * state.player.armor.defMod) : 0;
         const finalDmg = Math.max(1, m.atk - (state.player.baseDef + aDef));
         state.player.hp -= finalDmg;
-        
-        // [추가] 맞았을 때도 화면 살짝 흔들림
         shakeScreen();
-        
         showDamage(finalDmg, state.player.x, state.player.y, "#ff7675");
-        if(state.player.hp <= 0) {
-            alert("사망했습니다! 마을로 복귀합니다.");
-            state.player.hp = state.player.maxHp;
-            changeStage('town'); 
-        }
+        if(state.player.hp <= 0) handlePlayerDeath();
         updateUI();
     }
 
@@ -875,26 +806,21 @@
         
         if(state.player.exp >= state.player.maxExp) levelUp();
         updateUI(); 
-        if(state.currentStage !== 'town') setTimeout(spawnMonster, 2000);
+        if(state.currentStage !== 'town' && !bossFight.active) setTimeout(spawnMonster, 2000);
     }
 
     function spawnMonster() {
         const stage = STAGES[state.currentStage];
-        if(state.monsters.length >= 6 || !stage.mobs.length) return;
-        
+        if(state.monsters.length >= 6 || !stage.mobs.length || bossFight.active) return;
         const mobKey = stage.mobs[Math.floor(Math.random() * stage.mobs.length)];
+        spawnSpecificMonster(mobKey, Math.random() * 800 + 50, Math.random() * 500 + 50);
+    }
+
+    function spawnSpecificMonster(mobKey, x, y) {
         const baseData = MOB_DATA[mobKey];
         const id = Date.now() + Math.random();
-        
-        const mob = { 
-            id, ...baseData, 
-            x: Math.random() * 800 + 50, 
-            y: Math.random() * 500 + 50, 
-            maxHp: baseData.hp, 
-            isAngry: false 
-        };
+        const mob = { id, ...baseData, x, y, maxHp: baseData.hp, isAngry: (bossFight.active) };
         state.monsters.push(mob);
-        
         const el = document.createElement('div'); 
         el.className = `entity monster ${mob.class}`; 
         el.id = `mob-${id}`;
@@ -908,34 +834,201 @@
             if (m.isAngry) {
                 const dx = state.player.x - m.x, dy = state.player.y - m.y;
                 const dist = Math.hypot(dx, dy);
-                if (dist > 30) { 
-                    m.x += (dx / dist) * m.speed; 
-                    m.y += (dy / dist) * m.speed; 
-                }
+                if (dist > 30) { m.x += (dx / dist) * m.speed; m.y += (dy / dist) * m.speed; }
                 if (dist <= 50) { 
                     const now = Date.now(); 
-                    if (!m.lastAtkTime || now - m.lastAtkTime > 1000) { 
-                        m.lastAtkTime = now; 
-                        monsterAttack(m); 
-                    } 
+                    if (!m.lastAtkTime || now - m.lastAtkTime > 1000) { m.lastAtkTime = now; monsterAttack(m); } 
                 }
             }
         });
     }
 
-    function gachaDraw() {
-        if(state.player.gold < 100) { 
-            alert("골드가 부족합니다!"); 
-            return; 
-        }
-        state.player.gold -= 100;
-        
-        const rand = Math.random() * 100;
-        let gIdx;
-        if(rand < 60) gIdx = 0;      
-        else if(rand < 95) gIdx = 1; 
-        else gIdx = 2;               
+    // [전면 개편] 보스 AI 및 기믹 로직
+    function updateBoss() {
+        if (!bossFight.active) return;
+        bossFight.timer++;
+        let hpPercent = bossFight.hp / bossFight.maxHp;
 
+        // 1. 역동적인 무빙 (위아래 진동)
+        bossFight.y = bossFight.baseY + Math.sin(bossFight.timer * 0.05) * 20;
+
+        // 페이즈 전환
+        if (hpPercent <= 0.7 && hpPercent > 0.4 && bossFight.phase === 1) {
+            bossFight.phase = 2; 
+            bossFight.timer = 0; 
+            showDamage("2페이즈 시작!", bossFight.x, bossFight.y - 100, "#ff0000");
+        } else if (hpPercent <= 0.4 && bossFight.phase === 2) {
+            bossFight.phase = 3; 
+            bossFight.timer = 0;
+            bossFight.dragonTimer = 0;
+            bossFight.invincible = false;
+            showDamage("3페이즈 시작!", bossFight.x, bossFight.y - 100, "#ff3838");
+            
+            // 3페이즈 진입 시 6방향 바운스 고속 구체 1회 소환
+            for(let i=0; i<6; i++) {
+                let a = (Math.PI / 3) * i;
+                bossFight.bouncingOrbs.push({
+                    x: bossFight.x, y: bossFight.y,
+                    vx: Math.cos(a) * 8, vy: Math.sin(a) * 8, // 고속
+                    radius: 15, color: '#ff3838'
+                });
+            }
+        }
+
+        // 2. 공통 패턴: 강화된 구체 발사 (속도 대폭 상승, 1~3 페이즈 모두)
+        if (bossFight.timer % 80 === 0) {
+            for (let i = 0; i < 8; i++) {
+                let angle = (Math.PI / 4) * i + (bossFight.timer * 0.01);
+                bossFight.orbs.push({
+                    x: bossFight.x, y: bossFight.y,
+                    vx: Math.cos(angle) * 7, vy: Math.sin(angle) * 7, radius: 12
+                });
+            }
+        }
+
+        // 3. Phase 2 전용: 레이저 및 용 재소환
+        if (bossFight.phase >= 2) {
+            if (bossFight.phase === 2) {
+                let dragonCount = state.monsters.filter(m => m.type === 'dragon').length;
+                if (dragonCount === 0) {
+                    bossFight.invincible = false;
+                    bossFight.dragonTimer++;
+                    if (bossFight.dragonTimer > 300) { // 약 5초마다 재소환
+                        bossFight.dragonTimer = 0;
+                        bossFight.invincible = true;
+                        spawnSpecificMonster('dragon', bossFight.x - 200, bossFight.y);
+                        spawnSpecificMonster('dragon', bossFight.x + 200, bossFight.y);
+                        showDamage("수호룡 재소환!", bossFight.x, bossFight.y - 80, "#ffcc00");
+                    }
+                } else {
+                    bossFight.invincible = true;
+                    bossFight.dragonTimer = 0;
+                }
+            }
+
+            // 5초마다 조준 레이저 발사
+            if (bossFight.timer % 300 === 0) {
+                // 플레이어 중심점을 향한 각도 계산
+                let angle = Math.atan2(state.player.y + 22 - bossFight.y, state.player.x + 22 - bossFight.x);
+                bossFight.lasers.push({ x: bossFight.x, y: bossFight.y, angle: angle, timer: 90, active: false });
+            }
+        }
+
+        // 4. Phase 3 전용: 안전지대 기믹 
+        if (bossFight.phase === 3) {
+            let p3Time = bossFight.timer % 400; // 400 프레임(약 6.5초) 주기
+            if (p3Time === 10) {
+                bossFight.safeZone = { x: 100 + Math.random() * 750, y: 100 + Math.random() * 500, radius: 90 };
+            }
+            if (p3Time === 300) {
+                if (bossFight.safeZone) {
+                    let distToSafe = Math.hypot(state.player.x + 22 - bossFight.safeZone.x, state.player.y + 22 - bossFight.safeZone.y);
+                    if (distToSafe > bossFight.safeZone.radius) {
+                        state.player.hp -= state.player.maxHp * 0.8; 
+                        showDamage("파멸의 격진!", state.player.x, state.player.y, "#ff0000");
+                        shakeScreen();
+                        if(state.player.hp <= 0) handlePlayerDeath();
+                        updateUI();
+                    } else {
+                        showDamage("회피 성공!", state.player.x, state.player.y, "#00ffff");
+                    }
+                    bossFight.safeZone = null;
+                }
+            }
+        }
+
+        // 탄막(일반 구체) 이동 및 피격
+        for (let i = bossFight.orbs.length - 1; i >= 0; i--) {
+            let orb = bossFight.orbs[i];
+            orb.x += orb.vx; orb.y += orb.vy;
+            if (Math.hypot(state.player.x + 22 - orb.x, state.player.y + 22 - orb.y) < orb.radius + 15) {
+                state.player.hp -= 200;
+                showDamage(200, state.player.x, state.player.y, "#ff7675");
+                updateUI();
+                bossFight.orbs.splice(i, 1);
+                if(state.player.hp <= 0) handlePlayerDeath();
+                continue;
+            }
+            if (orb.x < 0 || orb.x > 950 || orb.y < 0 || orb.y > 700) bossFight.orbs.splice(i, 1);
+        }
+
+        // 탄막(바운스 구체) 이동 및 피격
+        for (let i = bossFight.bouncingOrbs.length - 1; i >= 0; i--) {
+            let orb = bossFight.bouncingOrbs[i];
+            orb.x += orb.vx; orb.y += orb.vy;
+            // 벽 튕기기
+            if (orb.x < 15 || orb.x > 935) orb.vx *= -1;
+            if (orb.y < 15 || orb.y > 685) orb.vy *= -1;
+            
+            if (Math.hypot(state.player.x + 22 - orb.x, state.player.y + 22 - orb.y) < orb.radius + 15) {
+                state.player.hp -= 150;
+                showDamage(150, state.player.x, state.player.y, "#ff7675");
+                updateUI();
+                if(state.player.hp <= 0) handlePlayerDeath();
+            }
+        }
+
+        // 레이저 갱신
+        for (let i = bossFight.lasers.length - 1; i >= 0; i--) {
+            let l = bossFight.lasers[i];
+            l.x = bossFight.x; // 보스를 따라다님
+            l.y = bossFight.y;
+            l.timer--;
+            
+            if (l.timer <= 30 && !l.active) {
+                l.active = true;
+                shakeScreen(); // 발사 시 화면 흔들림
+            }
+            if (l.timer <= 0) {
+                bossFight.lasers.splice(i, 1);
+                continue;
+            }
+
+            // 피격 판정 (직선 방정식 거리 계산)
+            if (l.active && l.timer % 10 === 0) {
+                let dx = Math.cos(l.angle);
+                let dy = Math.sin(l.angle);
+                let px = state.player.x + 22 - l.x;
+                let py = state.player.y + 22 - l.y;
+                let proj = px * dx + py * dy;
+                
+                if (proj > 0) { // 보스 앞쪽에 위치
+                    let dist = Math.abs(-dy * px + dx * py);
+                    if (dist < 30) { // 레이저 폭 안쪽
+                        state.player.hp -= 250;
+                        showDamage("레이저 피격!", state.player.x, state.player.y, "#ff3838");
+                        updateUI();
+                        if(state.player.hp <= 0) handlePlayerDeath();
+                    }
+                }
+            }
+        }
+
+        // 보스 처치 (최종 퀘스트 연동)
+        if (bossFight.hp <= 0 && bossFight.active) {
+            bossFight.active = false;
+            alert("심연의 지배자 크로노스를 처치했습니다!\n엄청난 보상을 획득했습니다.");
+            state.player.gold += 99999999;
+            state.player.exp += 500000;
+            
+            // 퀘스트 완료 처리
+            if (state.quest && !state.quest.completed && state.quest.target === 'chronos') {
+                state.quest.count++;
+                state.quest.completed = true;
+                updateQuestUI();
+            }
+
+            if(state.player.exp >= state.player.maxExp) levelUp();
+            updateUI();
+            changeStage('town');
+        }
+    }
+
+    function gachaDraw() {
+        if(state.player.gold < 100) { alert("골드가 부족합니다!"); return; }
+        state.player.gold -= 100;
+        const rand = Math.random() * 100;
+        let gIdx = (rand < 60) ? 0 : (rand < 95 ? 1 : 2);
         const prefix = ITEM_PREFIX[gIdx];
         const isWeapon = Math.random() > 0.5;
         let newItem;
@@ -943,96 +1036,52 @@
         if(isWeapon) {
             const types = Object.keys(WEAPON_ARCHETYPES);
             const arch = WEAPON_ARCHETYPES[types[Math.floor(Math.random() * types.length)]];
-            newItem = { 
-                id: Date.now(), 
-                name: prefix.name + arch.suffix, 
-                type: 'weapon', 
-                atkType: arch.type, 
-                pColor: arch.color, 
-                rangeMod: arch.rangeMod, 
-                dmgMod: arch.dmgMod, 
-                grade: prefix.grade, 
-                bonus: prefix.wBonus, 
-                color: prefix.color 
-            };
+            newItem = { id: Date.now(), name: prefix.name + arch.suffix, type: 'weapon', atkType: arch.type, pColor: arch.color, rangeMod: arch.rangeMod, dmgMod: arch.dmgMod, grade: prefix.grade, bonus: prefix.wBonus, color: prefix.color };
         } else {
             const types = Object.keys(ARMOR_ARCHETYPES);
             const arch = ARMOR_ARCHETYPES[types[Math.floor(Math.random() * types.length)]];
-            newItem = { 
-                id: Date.now(), 
-                name: prefix.name + arch.suffix, 
-                type: 'armor', 
-                armorType: arch.type, 
-                defMod: arch.defMod, 
-                speedMod: arch.speedMod, 
-                coolMod: arch.coolMod, 
-                grade: prefix.grade, 
-                bonus: prefix.aBonus, 
-                color: prefix.color 
-            };
+            newItem = { id: Date.now(), name: prefix.name + arch.suffix, type: 'armor', armorType: arch.type, defMod: arch.defMod, speedMod: arch.speedMod, coolMod: arch.coolMod, grade: prefix.grade, bonus: prefix.aBonus, color: prefix.color };
         }
         
         state.player.inventory.push(newItem);
         document.getElementById('gacha-result').innerHTML = `<span class="${newItem.color}">[${newItem.name}] 획득!</span><br><button onclick="equipItem(${newItem.id})" style="margin-top:8px; padding:5px 15px; cursor:pointer; background:#27ae60; color:white; border:none; border-radius:3px;">즉시 장착</button>`;
-        updateUI(); 
-        renderInventory();
+        updateUI(); renderInventory();
     }
 
-    function openBlacksmith() {
-        state.upgradeSlots = [];
-        toggleModal('blacksmith-modal');
-        renderUpgradeUI();
-    }
+    function openBlacksmith() { state.upgradeSlots = []; toggleModal('blacksmith-modal'); renderUpgradeUI(); }
 
     function renderUpgradeUI() {
         for(let i=0; i<3; i++) {
             const slotEl = document.getElementById(`slot-${i}`);
-            slotEl.innerHTML = '';
-            slotEl.className = 'upgrade-slot';
-            
+            slotEl.innerHTML = ''; slotEl.className = 'upgrade-slot';
             if(state.upgradeSlots[i]) {
                 const item = state.upgradeSlots[i];
-                slotEl.innerHTML = '⚔️'; 
-                if(item.type === 'armor') slotEl.innerHTML = '🛡️';
+                slotEl.innerHTML = item.type === 'armor' ? '🛡️' : '⚔️'; 
                 slotEl.classList.add('filled');
                 let borderColor = '#bdc3c7';
-                if(item.grade === 'rare') borderColor = '#3498db';
-                else if(item.grade === 'epic') borderColor = '#9b59b6';
-                else if(item.grade === 'legend') borderColor = '#f1c40f';
-                
+                if(item.grade === 'rare') borderColor = '#3498db'; else if(item.grade === 'epic') borderColor = '#9b59b6'; else if(item.grade === 'legend') borderColor = '#f1c40f';
                 slotEl.style.borderColor = borderColor;
             }
         }
-
-        const statusEl = document.getElementById('upgrade-status');
-        const btnEl = document.getElementById('upgrade-btn');
-        
+        const statusEl = document.getElementById('upgrade-status'), btnEl = document.getElementById('upgrade-btn');
         if (state.upgradeSlots.length === 3) {
-            const grade = state.upgradeSlots[0].grade;
-            const uData = UPGRADE_DATA[grade];
+            const uData = UPGRADE_DATA[state.upgradeSlots[0].grade];
             if(uData) {
                 statusEl.innerHTML = `비용: ${uData.cost}G / 확률: ${uData.success*100}%`;
-                btnEl.disabled = false;
-                btnEl.style.opacity = 1;
+                btnEl.disabled = false; btnEl.style.opacity = 1;
             } else {
-                statusEl.innerText = "강화 불가 등급";
-                btnEl.disabled = true;
-                btnEl.style.opacity = 0.5;
+                statusEl.innerText = "강화 불가 등급"; btnEl.disabled = true; btnEl.style.opacity = 0.5;
             }
         } else {
-            statusEl.innerText = "재료 3개를 선택하세요";
-            btnEl.disabled = true;
-            btnEl.style.opacity = 0.5;
+            statusEl.innerText = "재료 3개를 선택하세요"; btnEl.disabled = true; btnEl.style.opacity = 0.5;
         }
 
         const listEl = document.getElementById('upgrade-inv-list');
         listEl.innerHTML = '';
-
         let items = state.player.inventory.filter(item => {
             if (state.player.weapon && state.player.weapon.id === item.id) return false;
             if (state.player.armor && state.player.armor.id === item.id) return false;
             if (state.upgradeSlots.some(slot => slot.id === item.id)) return false;
-            
             if (state.upgradeSlots.length > 0) {
                 const base = state.upgradeSlots[0];
                 if (item.grade !== base.grade || item.type !== base.type) return false;
@@ -1041,30 +1090,16 @@
             return true;
         });
 
-        if (items.length === 0) {
-            listEl.innerHTML = '<div style="grid-column:span 5; text-align:center; padding:20px; color:#777;">가능한 재료가 없습니다.</div>';
-        }
-
+        if (items.length === 0) listEl.innerHTML = '<div style="grid-column:span 5; text-align:center; padding:20px; color:#777;">가능한 재료가 없습니다.</div>';
         items.forEach(item => {
-            const el = document.createElement('div');
-            el.className = 'inv-item';
-            el.innerHTML = `<span class="${item.color}">${item.name}</span>`;
-            el.onclick = () => addUpgradeItem(item);
+            const el = document.createElement('div'); el.className = 'inv-item';
+            el.innerHTML = `<span class="${item.color}">${item.name}</span>`; el.onclick = () => addUpgradeItem(item);
             listEl.appendChild(el);
         });
     }
 
-    function addUpgradeItem(item) {
-        if(state.upgradeSlots.length >= 3) return;
-        state.upgradeSlots.push(item);
-        renderUpgradeUI();
-    }
-
-    function removeUpgradeItem(idx) {
-        if(!state.upgradeSlots[idx]) return;
-        state.upgradeSlots.splice(idx, 1);
-        renderUpgradeUI();
-    }
+    function addUpgradeItem(item) { if(state.upgradeSlots.length >= 3) return; state.upgradeSlots.push(item); renderUpgradeUI(); }
+    function removeUpgradeItem(idx) { if(!state.upgradeSlots[idx]) return; state.upgradeSlots.splice(idx, 1); renderUpgradeUI(); }
 
     function attemptUpgrade() {
         if (state.upgradeSlots.length < 3) return;
@@ -1081,68 +1116,44 @@
     
         const modal = document.getElementById('blacksmith-modal');
         const overlayText = document.getElementById('upgrade-overlay-text');
-        modal.classList.remove('anim-shake', 'anim-success');
-        void modal.offsetWidth;
-        const centerX = 475, centerY = 350;
+        modal.classList.remove('anim-shake', 'anim-success'); void modal.offsetWidth;
     
         if (isSuccess) {
-            let nextGIdx = 0;
-            if (baseItem.grade === 'common') nextGIdx = 1;
-            else if (baseItem.grade === 'rare') nextGIdx = 2;
-            else if (baseItem.grade === 'epic') nextGIdx = 3;
-            else if (baseItem.grade === 'legend') nextGIdx = 4;
+            let nextGIdx = baseItem.grade === 'common' ? 1 : (baseItem.grade === 'rare' ? 2 : (baseItem.grade === 'epic' ? 3 : 4));
             const prefix = ITEM_PREFIX[nextGIdx];
             let newItem;
             if (baseItem.type === 'weapon') {
                 const types = Object.keys(WEAPON_ARCHETYPES);
                 const arch = WEAPON_ARCHETYPES[types[Math.floor(Math.random() * types.length)]];
-                newItem = { 
-                    id: Date.now(), name: prefix.name + arch.suffix, type: 'weapon', 
-                    atkType: arch.type, pColor: arch.color, rangeMod: arch.rangeMod, dmgMod: arch.dmgMod, 
-                    grade: prefix.grade, bonus: prefix.wBonus, color: prefix.color 
-                };
+                newItem = { id: Date.now(), name: prefix.name + arch.suffix, type: 'weapon', atkType: arch.type, pColor: arch.color, rangeMod: arch.rangeMod, dmgMod: arch.dmgMod, grade: prefix.grade, bonus: prefix.wBonus, color: prefix.color };
             } else {
                 const types = Object.keys(ARMOR_ARCHETYPES);
                 const arch = ARMOR_ARCHETYPES[types[Math.floor(Math.random() * types.length)]];
-                newItem = { 
-                    id: Date.now(), name: prefix.name + arch.suffix, type: 'armor', 
-                    armorType: arch.type, defMod: arch.defMod, speedMod: arch.speedMod, coolMod: arch.coolMod, 
-                    grade: prefix.grade, bonus: prefix.aBonus, color: prefix.color 
-                };
+                newItem = { id: Date.now(), name: prefix.name + arch.suffix, type: 'armor', armorType: arch.type, defMod: arch.defMod, speedMod: arch.speedMod, coolMod: arch.coolMod, grade: prefix.grade, bonus: prefix.aBonus, color: prefix.color };
             }
             state.player.inventory.push(newItem);
             modal.classList.add('anim-success');
-            const pColor = prefix.grade === 'mythic' ? "#ff3838" : "#f1c40f";
-            createUIParticles(centerX, centerY, pColor, 60);
+            createUIParticles(475, 350, prefix.grade === 'mythic' ? "#ff3838" : "#f1c40f", 60);
             overlayText.innerText = prefix.grade === 'mythic' ? "MYTHIC!!" : "SUCCESS!!";
-            overlayText.style.color = pColor;
+            overlayText.style.color = prefix.grade === 'mythic' ? "#ff3838" : "#f1c40f";
             overlayText.classList.add('show');
-            document.getElementById('upgrade-status').innerText = "강화 성공!";
-            document.getElementById('upgrade-status').style.color = "#2ecc71";
+            document.getElementById('upgrade-status').innerText = "강화 성공!"; document.getElementById('upgrade-status').style.color = "#2ecc71";
         } else {
-            const savedItem = state.upgradeSlots[Math.floor(Math.random() * 3)];
-            state.player.inventory.push(savedItem);
+            state.player.inventory.push(state.upgradeSlots[Math.floor(Math.random() * 3)]);
             modal.classList.add('anim-shake');
-            createUIParticles(centerX, centerY, "#7f8c8d", 30);
-            overlayText.innerText = "FAILED...";
-            overlayText.style.color = "#e74c3c";
-            overlayText.classList.add('show');
-            document.getElementById('upgrade-status').innerText = "강화 실패 (재료 1개 복구)";
-            document.getElementById('upgrade-status').style.color = "#e74c3c";
+            createUIParticles(475, 350, "#7f8c8d", 30);
+            overlayText.innerText = "FAILED..."; overlayText.style.color = "#e74c3c"; overlayText.classList.add('show');
+            document.getElementById('upgrade-status').innerText = "강화 실패 (재료 1개 복구)"; document.getElementById('upgrade-status').style.color = "#e74c3c";
         }
         setTimeout(() => { overlayText.classList.remove('show'); }, 1200);
-        state.upgradeSlots = [];
-        updateUI();
-        renderUpgradeUI();
+        state.upgradeSlots = []; updateUI(); renderUpgradeUI();
     }
 
     function equipItem(id) {
         const item = state.player.inventory.find(i => i.id === id);
         if(!item) return;
-        if(item.type === 'weapon') state.player.weapon = item;
-        else state.player.armor = item;
-        updateUI(); 
-        renderInventory();
+        if(item.type === 'weapon') state.player.weapon = item; else state.player.armor = item;
+        updateUI(); renderInventory();
     }
 
     function setFilter(t) { state.currentFilter = t; renderInventory(); }
@@ -1185,35 +1196,23 @@
         document.getElementById('over-def').innerText = p.baseDef + aDef;
         
         const wEl = document.getElementById('over-w');
-        wEl.innerText = "무기: " + (p.weapon ? p.weapon.name : "맨주먹");
-        wEl.className = p.weapon ? "grade-"+p.weapon.grade : "grade-common";
+        wEl.innerText = "무기: " + (p.weapon ? p.weapon.name : "맨주먹"); wEl.className = p.weapon ? "grade-"+p.weapon.grade : "grade-common";
         const aEl = document.getElementById('over-a');
-        aEl.innerText = "방어구: " + (p.armor ? p.armor.name : "평상복");
-        aEl.className = p.armor ? "grade-"+p.armor.grade : "grade-common";
+        aEl.innerText = "방어구: " + (p.armor ? p.armor.name : "평상복"); aEl.className = p.armor ? "grade-"+p.armor.grade : "grade-common";
     }
 
     function movePlayer() {
         let dx = 0, dy = 0;
-        if(state.keys['w']) dy = -1; 
-        if(state.keys['s']) dy = 1; 
-        if(state.keys['a']) dx = -1; 
-        if(state.keys['d']) dx = 1;
+        if(state.keys['w']) dy = -1; if(state.keys['s']) dy = 1; 
+        if(state.keys['a']) dx = -1; if(state.keys['d']) dx = 1;
         
         if(dx||dy){
             const l = Math.hypot(dx,dy);
             const currentSpeed = CONFIG.baseSpeed * (state.player.armor ? state.player.armor.speedMod : 1.0);
             let nx = state.player.x + (dx/l)*currentSpeed;
             let ny = state.player.y + (dy/l)*currentSpeed;
-
             let coll = false;
-            state.objects.forEach(obj => {
-                if(obj.type === 'obstacle') {
-                    if (nx > obj.x && nx < obj.x + obj.w && ny > obj.y && ny < obj.y + obj.h) {
-                        coll = true;
-                    }
-                }
-            });
-
+            state.objects.forEach(obj => { if(obj.type === 'obstacle' && nx > obj.x && nx < obj.x + obj.w && ny > obj.y && ny < obj.y + obj.h) coll = true; });
             if(!coll) {
                 state.player.x = Math.max(0, Math.min(CONFIG.width-44, nx));
                 state.player.y = Math.max(0, Math.min(CONFIG.height-44, ny));
@@ -1222,14 +1221,9 @@
     }
 
     function levelUp() {
-        state.player.lv++; 
-        state.player.exp = 0; 
-        state.player.maxExp = Math.floor(state.player.maxExp * 1.25); 
-        state.player.maxHp += 25; 
-        state.player.hp = state.player.maxHp; 
-        state.player.baseAtk += 4;
-        showDamage("LEVEL UP!", state.player.x, state.player.y - 60, "#55efc4");
-        updateUI();
+        state.player.lv++; state.player.exp = 0; state.player.maxExp = Math.floor(state.player.maxExp * 1.25); 
+        state.player.maxHp += 25; state.player.hp = state.player.maxHp; state.player.baseAtk += 4;
+        showDamage("LEVEL UP!", state.player.x, state.player.y - 60, "#55efc4"); updateUI();
     }
 
     function toggleModal(id) {
@@ -1245,34 +1239,23 @@
 
     function ambientEffects() {
         if(state.currentStage === 'town') {
-            const l = document.createElement('div');
-            l.className = 'leaf';
-            l.style.left = Math.random() * 950 + 'px';
-            l.style.top = '-10px';
-            document.getElementById('game-screen').appendChild(l);
-            setTimeout(() => l.remove(), 4000);
+            const l = document.createElement('div'); l.className = 'leaf';
+            l.style.left = Math.random() * 950 + 'px'; l.style.top = '-10px';
+            document.getElementById('game-screen').appendChild(l); setTimeout(() => l.remove(), 4000);
         }
     }
 
     function updateMinimap() {
-        if (!state.uiSettings['minimap']) {
-            document.getElementById('minimap').style.display = 'none';
-            return;
-        }
+        if (!state.uiSettings['minimap']) { document.getElementById('minimap').style.display = 'none'; return; }
         document.getElementById('minimap').style.display = 'block';
-        const mm = document.getElementById('minimap');
-        mm.innerHTML = '';
+        const mm = document.getElementById('minimap'); mm.innerHTML = '';
         addDot(state.player.x, state.player.y, '#3498db');
         state.npcs.forEach(n => addDot(n.x, n.y, '#f1c40f'));
         state.monsters.forEach(m => addDot(m.x, m.y, m.isDummy ? '#e67e22' : '#e74c3c'));
-
+        if(bossFight.active) addDot(bossFight.x, bossFight.y, '#9b59b6');
         function addDot(x, y, color) {
-            const d = document.createElement('div');
-            d.className = 'mm-dot';
-            d.style.background = color;
-            d.style.left = (x / 950 * 150) + 'px';
-            d.style.top = (y / 700 * 150) + 'px';
-            mm.appendChild(d);
+            const d = document.createElement('div'); d.className = 'mm-dot'; d.style.background = color;
+            d.style.left = (x / 950 * 150) + 'px'; d.style.top = (y / 700 * 150) + 'px'; mm.appendChild(d);
         }
     }
 
@@ -1280,9 +1263,14 @@
         state.monsters.forEach(m => document.getElementById(`mob-${m.id}`)?.remove());
         state.npcs.forEach(n => document.getElementById(`npc-${n.key}`)?.remove());
         state.objects.forEach(o => o.el?.remove());
-        state.monsters = []; 
-        state.npcs = []; 
-        state.objects = [];
+        
+        let bEl = document.getElementById('boss-entity'); if (bEl) bEl.remove();
+        let szEl = document.getElementById('safe-zone'); if (szEl) szEl.remove();
+        document.querySelectorAll('.boss-orb').forEach(e => e.remove());
+        document.querySelectorAll('.boss-laser').forEach(e => e.remove());
+        document.querySelectorAll('.bounce-orb').forEach(e => e.remove());
+
+        state.monsters = []; state.npcs = []; state.objects = [];
     }
 
     function gameLoop() {
@@ -1290,13 +1278,9 @@
         const isDialog = document.getElementById('dialog-box').style.display === 'block';
         
         if(!anyModalOpen && !isDialog) { 
-            // [추가] 자동 전투 로직
-            if (state.autoBattle) {
-                doAutoBattle();
-            } else {
-                movePlayer();
-            }
+            if (state.autoBattle) doAutoBattle(); else movePlayer();
             moveMonsters(); 
+            updateBoss(); 
         }
         render(); 
         requestAnimationFrame(gameLoop);
@@ -1310,27 +1294,113 @@
         state.monsters.forEach(m => {
             const el = document.getElementById(`mob-${m.id}`);
             if(el) { 
-                el.style.left = m.x + 'px'; 
-                el.style.top = m.y + 'px'; 
+                el.style.left = m.x + 'px'; el.style.top = m.y + 'px'; 
                 const hpBar = document.getElementById(`hp-${m.id}`);
-                if(hpBar && !m.isDummy) {
-                    hpBar.style.width = (m.hp/m.maxHp*100) + "%"; 
-                }
-                if(!m.isDummy) {
-                    el.style.borderColor = m.isAngry ? "#ff7675" : "rgba(0,0,0,0.3)"; 
-                }
+                if(hpBar && !m.isDummy) hpBar.style.width = (m.hp/m.maxHp*100) + "%"; 
+                if(!m.isDummy) el.style.borderColor = m.isAngry ? "#ff7675" : "rgba(0,0,0,0.3)"; 
             }
         });
+
+        // 보스전 렌더링
+        let screen = document.getElementById('game-screen');
+        if (bossFight.active) {
+            // 안전지대
+            if (bossFight.safeZone) {
+                let szEl = document.getElementById('safe-zone');
+                if(!szEl) {
+                    szEl = document.createElement('div'); szEl.id = 'safe-zone';
+                    szEl.style.position = 'absolute'; szEl.style.borderRadius = '50%'; szEl.style.border = '3px solid #ffff00';
+                    szEl.style.pointerEvents = 'none'; szEl.style.zIndex = '5';
+                    screen.appendChild(szEl);
+                }
+                szEl.style.width = (bossFight.safeZone.radius * 2) + 'px'; szEl.style.height = (bossFight.safeZone.radius * 2) + 'px';
+                szEl.style.left = (bossFight.safeZone.x - bossFight.safeZone.radius) + 'px'; szEl.style.top = (bossFight.safeZone.y - bossFight.safeZone.radius) + 'px';
+                szEl.style.backgroundColor = (bossFight.timer % 20 < 10) ? "rgba(255, 255, 0, 0.4)" : "rgba(255, 255, 0, 0.2)";
+            } else {
+                let szEl = document.getElementById('safe-zone'); if(szEl) szEl.remove();
+            }
+
+            // 보스 본체
+            let bEl = document.getElementById('boss-entity');
+            if (!bEl) {
+                bEl = document.createElement('div'); bEl.id = 'boss-entity'; bEl.className = 'entity';
+                bEl.style.width = (bossFight.radius * 2) + 'px'; bEl.style.height = (bossFight.radius * 2) + 'px';
+                bEl.style.borderRadius = '50%'; bEl.style.display = 'flex'; bEl.style.justifyContent = 'center'; bEl.style.alignItems = 'center';
+                bEl.style.fontSize = '40px'; bEl.style.zIndex = '12'; bEl.style.transition = 'none';
+                bEl.innerHTML = `<div style="position:absolute; top:-25px; width:200px; text-align:center; color:white; font-size:14px; font-weight:bold; left:-40px;">${bossFight.name} (Phase ${bossFight.phase})</div>
+                                 <div style="position:absolute; top:-8px; width:100%; height:8px; background:red; left:0;"><div id="boss-hp-bar" style="width:100%; height:100%; background:#00ff00;"></div></div>👁️`;
+                screen.appendChild(bEl);
+            }
+            bEl.style.left = (bossFight.x - bossFight.radius) + 'px'; bEl.style.top = (bossFight.y - bossFight.radius) + 'px';
+            bEl.style.backgroundColor = bossFight.invincible ? "#888888" : bossFight.color;
+            bEl.style.border = `4px solid ${bossFight.invincible ? "#555" : "#ff00ff"}`;
+            bEl.style.boxShadow = bossFight.invincible ? "none" : "0 0 30px #ff00ff";
+            
+            let bHp = document.getElementById('boss-hp-bar');
+            if(bHp) {
+                bHp.style.width = (bossFight.hp / bossFight.maxHp * 100) + '%';
+                bHp.style.background = bossFight.invincible ? 'gray' : '#00ff00';
+            }
+            bEl.children[0].innerText = `${bossFight.name} (Phase ${bossFight.phase})`;
+
+            // 일반 구체
+            document.querySelectorAll('.boss-orb').forEach(e => e.remove());
+            bossFight.orbs.forEach(orb => {
+                let oEl = document.createElement('div'); oEl.className = 'boss-orb';
+                oEl.style.position = 'absolute'; oEl.style.width = (orb.radius * 2) + 'px'; oEl.style.height = (orb.radius * 2) + 'px';
+                oEl.style.borderRadius = '50%'; oEl.style.backgroundColor = '#aa00ff'; oEl.style.boxShadow = '0 0 15px #ff00ff';
+                oEl.style.left = (orb.x - orb.radius) + 'px'; oEl.style.top = (orb.y - orb.radius) + 'px';
+                oEl.style.pointerEvents = 'none'; oEl.style.zIndex = '30';
+                screen.appendChild(oEl);
+            });
+
+            // 바운스 구체 (3페이즈)
+            document.querySelectorAll('.bounce-orb').forEach(e => e.remove());
+            bossFight.bouncingOrbs.forEach(orb => {
+                let el = document.createElement('div'); el.className = 'bounce-orb';
+                el.style.position = 'absolute'; el.style.width = (orb.radius * 2) + 'px'; el.style.height = (orb.radius * 2) + 'px';
+                el.style.borderRadius = '50%'; el.style.backgroundColor = orb.color; el.style.boxShadow = '0 0 20px ' + orb.color;
+                el.style.left = (orb.x - orb.radius) + 'px'; el.style.top = (orb.y - orb.radius) + 'px';
+                el.style.pointerEvents = 'none'; el.style.zIndex = '31';
+                screen.appendChild(el);
+            });
+
+            // 레이저
+            document.querySelectorAll('.boss-laser').forEach(e => e.remove());
+            bossFight.lasers.forEach(l => {
+                let el = document.createElement('div'); el.className = 'boss-laser';
+                el.style.position = 'absolute';
+                el.style.left = l.x + 'px'; el.style.top = l.y + 'px';
+                el.style.width = '1500px'; 
+                el.style.transformOrigin = '0 50%';
+                el.style.transform = `rotate(${l.angle}rad) translateY(-50%)`;
+                el.style.pointerEvents = 'none';
+                el.style.zIndex = '25';
+                if (l.active) {
+                    el.style.height = '60px'; // 발사
+                    el.style.background = 'rgba(255, 0, 0, 0.7)';
+                    el.style.boxShadow = '0 0 25px red';
+                } else {
+                    el.style.height = '4px'; // 조준선
+                    el.style.background = 'rgba(255, 0, 0, 0.4)';
+                }
+                screen.appendChild(el);
+            });
+
+        } else {
+            let bEl = document.getElementById('boss-entity'); if (bEl) bEl.remove();
+            let szEl = document.getElementById('safe-zone'); if(szEl) szEl.remove();
+            document.querySelectorAll('.boss-orb').forEach(e => e.remove());
+            document.querySelectorAll('.boss-laser').forEach(e => e.remove());
+            document.querySelectorAll('.bounce-orb').forEach(e => e.remove());
+        }
     }
 
-    // [수정] showDamage에 isCrit 인자 추가 (크리티컬 시 글자 크기/색상 변경)
     function showDamage(t, x, y, c, isCrit=false) { 
         const el = document.createElement('div'); 
         el.className = `dmg-text ${isCrit ? 'dmg-crit' : ''}`; 
-        el.innerText = isCrit ? `💥${t}` : t; // 크리티컬 시 이모지 추가
-        el.style.color = c; 
-        el.style.left = x+'px'; 
-        el.style.top = y+'px'; 
+        el.innerText = isCrit ? `💥${t}` : t;
+        el.style.color = c; el.style.left = x+'px'; el.style.top = y+'px'; 
         document.getElementById('game-screen').appendChild(el); 
         setTimeout(() => el.remove(), 600); 
     }
@@ -1343,86 +1413,58 @@
     }
 
     function exportSaveFile() {
-        const saveData = {
-            player: state.player,
-            currentStage: state.currentStage,
-            saveDate: new Date().toLocaleString()
-        };
-
+        const saveData = { player: state.player, currentStage: state.currentStage, saveDate: new Date().toLocaleString() };
         const dataStr = JSON.stringify(saveData, null, 4);
         const blob = new Blob([dataStr], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        
         const link = document.createElement("a");
-        link.href = url;
-        link.download = `Chronicles_Save_Lv${state.player.lv}.json`;
-        document.body.appendChild(link);
-        link.click();
-        
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
+        link.href = url; link.download = `Chronicles_Save_Lv${state.player.lv}.json`;
+        document.body.appendChild(link); link.click();
+        document.body.removeChild(link); URL.revokeObjectURL(url);
         showDamage("시스템: 파일 저장 완료!", 400, 300, "#f1c40f");
     }
 
-    // [수정] 세이브 파일 로드 시 안전하게 병합 (Safe Merging)
     function importSaveFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
+        const file = event.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                
-                // 기존 데이터 통째로 교체 방지 (Object.assign 사용)
-                // 현재 state.player의 구조를 유지하면서 저장된 값만 덮어씀
                 if (data.player) {
                     Object.assign(state.player, data.player);
-                    
-                    // 만약 옛날 세이브 파일이라 필수 변수가 없다면 강제 초기화
                     if (state.player.lastAtkTime === undefined) state.player.lastAtkTime = 0;
-                    // 인벤토리 등 참조 타입도 제대로 들어왔는지 확인 (JSON 파싱으로 이미 객체화됨)
                 }
-
-                if (data.currentStage) state.currentStage = data.currentStage;
-                else state.currentStage = 'town';
-
-                // 자동전투 상태 등 일시적 상태는 초기화
+                state.currentStage = data.currentStage || 'town';
                 state.autoBattle = false;
                 const autoBtn = document.getElementById('auto-btn');
-                if(autoBtn) {
-                    autoBtn.innerText = '🤖 자동 전투: OFF';
-                    autoBtn.style.background = '#27ae60';
-                }
+                if(autoBtn) { autoBtn.innerText = '🤖 자동 전투: OFF'; autoBtn.style.background = '#27ae60'; }
                 
-                updateUI();
-                renderInventory();
-                
-                clearEntities(); 
+                updateUI(); renderInventory(); clearEntities(); 
                 const stage = STAGES[state.currentStage];
 
-                if (state.currentStage === 'town') {
+                if (state.currentStage === 'boss_altar') {
+                    bossFight.active = true;
+                    bossFight.hp = bossFight.maxHp;
+                    bossFight.phase = 1; bossFight.timer = 0;
+                    bossFight.invincible = false; bossFight.dragonTimer = 0;
+                    bossFight.orbs = []; bossFight.bouncingOrbs = []; bossFight.lasers = [];
+                    bossFight.safeZone = null;
+                    applyStageVisuals(stage);
+                    document.getElementById('current-map-name').innerText = stage.name;
+                } else if (state.currentStage === 'town') {
                     setupTown();
                 } else {
                     applyStageVisuals(stage);
                     document.getElementById('current-map-name').innerText = stage.name;
                     for(let i=0; i<4; i++) spawnMonster();
                 }
-                
                 showDamage("시스템: 데이터 로드 성공!", 400, 300, "#74b9ff");
-            } catch (err) {
-                console.error("Save Load Error:", err);
-                alert("유효한 세이브 파일이 아니거나 데이터가 손상되었습니다.");
-            }
+            } catch (err) { alert("유효한 세이브 파일이 아니거나 데이터가 손상되었습니다."); }
         };
         reader.readAsText(file);
     }
 
-    window.addEventListener('keydown', e => { 
-        state.keys[e.key.toLowerCase()] = true; 
-        if(e.code==='Space') tryAttack(); 
-    });
+    window.addEventListener('keydown', e => { state.keys[e.key.toLowerCase()] = true; if(e.code==='Space') tryAttack(); });
     window.addEventListener('keyup', e => state.keys[e.key.toLowerCase()] = false);
 
     /* === 모바일 컨트롤러 로직 === */
@@ -1435,28 +1477,17 @@
         document.getElementById('mobile-controls').style.display = 'block';
     }
 
-    joystickBase.addEventListener('touchstart', e => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        joyTouchId = touch.identifier;
-        moveJoystick(touch);
-    }, {passive: false});
-
+    joystickBase.addEventListener('touchstart', e => { e.preventDefault(); joyTouchId = e.changedTouches[0].identifier; moveJoystick(e.changedTouches[0]); }, {passive: false});
     joystickBase.addEventListener('touchmove', e => {
         e.preventDefault();
         for(let i=0; i<e.changedTouches.length; i++) {
-            if(e.changedTouches[i].identifier === joyTouchId) {
-                moveJoystick(e.changedTouches[i]);
-                break;
-            }
+            if(e.changedTouches[i].identifier === joyTouchId) { moveJoystick(e.changedTouches[i]); break; }
         }
     }, {passive: false});
 
     function endJoystick() {
-        joyTouchId = null;
-        joystickStick.style.transform = `translate(-50%, -50%)`;
-        state.keys['w'] = false; state.keys['s'] = false;
-        state.keys['a'] = false; state.keys['d'] = false;
+        joyTouchId = null; joystickStick.style.transform = `translate(-50%, -50%)`;
+        state.keys['w'] = false; state.keys['s'] = false; state.keys['a'] = false; state.keys['d'] = false;
     }
 
     joystickBase.addEventListener('touchend', e => endJoystick());
@@ -1464,35 +1495,18 @@
 
     function moveJoystick(touch) {
         const rect = joystickBase.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        
-        const dx = touch.clientX - centerX;
-        const dy = touch.clientY - centerY;
+        const centerX = rect.left + rect.width / 2; const centerY = rect.top + rect.height / 2;
+        const dx = touch.clientX - centerX; const dy = touch.clientY - centerY;
         const dist = Math.min(Math.hypot(dx, dy), 35); 
         const angle = Math.atan2(dy, dx);
-        
-        const moveX = Math.cos(angle) * dist;
-        const moveY = Math.sin(angle) * dist;
-        
-        joystickStick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
-        
+        joystickStick.style.transform = `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px))`;
         const deg = angle * (180 / Math.PI);
-        state.keys['w'] = (deg > -150 && deg < -30);
-        state.keys['s'] = (deg > 30 && deg < 150);
-        state.keys['a'] = (Math.abs(deg) > 120);
-        state.keys['d'] = (Math.abs(deg) < 60);
+        state.keys['w'] = (deg > -150 && deg < -30); state.keys['s'] = (deg > 30 && deg < 150);
+        state.keys['a'] = (Math.abs(deg) > 120); state.keys['d'] = (Math.abs(deg) < 60);
     }
 
-    mobileAtkBtn.addEventListener('touchstart', e => {
-        e.preventDefault();
-        mobileAtkBtn.style.transform = 'scale(0.9)';
-        tryAttack();
-    });
-    mobileAtkBtn.addEventListener('touchend', e => {
-        e.preventDefault();
-        mobileAtkBtn.style.transform = 'scale(1)';
-    });
+    mobileAtkBtn.addEventListener('touchstart', e => { e.preventDefault(); mobileAtkBtn.style.transform = 'scale(0.9)'; tryAttack(); });
+    mobileAtkBtn.addEventListener('touchend', e => { e.preventDefault(); mobileAtkBtn.style.transform = 'scale(1)'; });
 
     init();
 </script>
